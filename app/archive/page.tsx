@@ -30,12 +30,13 @@ export default async function ArchivePage() {
       ) : (
           <div className="grid md:grid-cols-2 gap-6">
             {events.map((event) => {
-               const themeColor = {
+               const themeMap: Record<string, string> = {
                 modern: 'from-blue-500 to-purple-600',
                 elegant: 'from-yellow-600 to-gray-900',
                 retro: 'from-pink-500 to-indigo-500',
                 neon: 'from-green-400 to-blue-900',
-              }[event.theme || 'modern'];
+              };
+              const themeColor = themeMap[event.theme || 'modern'] || themeMap.modern;
 
               return (
                 <Link
