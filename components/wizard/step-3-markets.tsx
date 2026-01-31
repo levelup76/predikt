@@ -137,7 +137,8 @@ export default function Step3Markets({ eventId }: { eventId: string }) {
 }
 
 // Subcomponent for managing options of a single market
-import { useFieldArray, Control } from 'react-hook-form'
+// Note: Imports like usageFieldArray are already at the top of the file, do not re-import.
+import { Control } from 'react-hook-form'
 
 function MarketOptions({ control, marketIndex, errors }: { control: Control<EventMarketsForm>, marketIndex: number, errors: any }) {
   const { fields, append, remove } = useFieldArray({
