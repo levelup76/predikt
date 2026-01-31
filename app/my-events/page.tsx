@@ -60,19 +60,21 @@ export default async function MyEventsPage() {
       ) : (
         <div className="grid gap-4">
           {events.map((event) => {
-             const statusColors = {
+             const statusColorMap: Record<string, string> = {
               open: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
               locked: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
               revealed: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', 
               draft: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-            }[event.status] || 'bg-gray-100';
+            };
+            const statusColors = statusColorMap[event.status || 'draft'] || 'bg-gray-100';
 
-            const statusLabel = {
+            const statusLabelMap: Record<string, string> = {
                 open: 'Nyitva',
                 locked: 'Lezárva',
                 revealed: 'Kiértékelve',
                 draft: 'Vázlat'
-            }[event.status];
+            };
+            const statusLabel = statusLabelMap[event.status || 'draft'] || 'Ismeretlen';
             
             // @ts-ignore
             const predictionCount = event.predictions?.[0]?.count || 0;
