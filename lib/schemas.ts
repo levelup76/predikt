@@ -37,8 +37,8 @@ export const optionSchema = z.object({
 export const marketSchema = z.object({
   id: z.string().optional(), // For editing existing
   question: z.string().min(5, "A kérdés túl rövid"),
-  type: z.enum(["select", "boolean", "range"]), // MVP: only select mostly
-  options: z.array(optionSchema).min(2, "Legalább 2 választási lehetőség kell"),
+  type: z.enum(["select", "boolean", "range", "score"]), // Added 'score'
+  options: z.array(optionSchema).min(1, "Legalább 1 mező kötelező"), // Changed min 2 to 1 (score might have 1 input like "Total goals")
 });
 
 export const eventMarketsSchema = z.object({

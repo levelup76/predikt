@@ -16,7 +16,10 @@ export default async function Header() {
         <nav className="hidden md:flex items-center gap-4 text-sm font-medium">
           <Link href="/" className="hover:text-blue-600 transition-colors">Felfedezés</Link>
           {user && (
-             <Link href="/my-predictions" className="hover:text-blue-600 transition-colors">Tippjeim</Link>
+             <>
+               <Link href="/my-predictions" className="hover:text-blue-600 transition-colors">Tippjeim</Link>
+               <Link href="/my-events" className="hover:text-blue-600 transition-colors">Eseményeim</Link>
+             </>
           )}
         </nav>
       </div>

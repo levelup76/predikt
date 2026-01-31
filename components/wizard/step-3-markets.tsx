@@ -78,29 +78,41 @@ export default function Step3Markets({ eventId }: { eventId: string }) {
                )}
             </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-semibold mb-1">Kérdés #{mIndex + 1}</label>
-              <input 
-                 {...form.register(`markets.${mIndex}.question`)}
-                 placeholder="Pl. Ki nyeri a legjobb film díjat?"
-                 className="w-full p-2 border rounded dark:bg-gray-800 dark:border-gray-700"
-              />
-              {form.formState.errors.markets?.[mIndex]?.question && (
-                <p className="text-red-500 text-sm mt-1">{form.formState.errors.markets[mIndex]?.question?.message}</p>
-              )}
+            <div className="mb-4 grid grid-cols-4 gap-4">
+               <div className="col-span-3">
+                  <label className="block text-sm font-semibold mb-1">Kérdés #{mIndex + 1}</label>
+                  <input 
+                     {...form.register(`markets.${mIndex}.question`)}
+                     placeholder="Pl. Ki nyeri a meccset?"
+                     className="w-full p-2 border rounded dark:bg-gray-800 dark:border-gray-700"
+                  />
+                  {form.formState.errors.markets?.[mIndex]?.question && (
+                    <p className="text-red-500 text-sm mt-1">{form.formState.errors.markets[mIndex]?.question?.message}</p>
+                  )}
+               </div>
+               <div className="col-span-1">
+                  <label className="block text-sm font-semibold mb-1">Típus</label>
+                  <select
+                     {...form.register(`markets.${mIndex}.type`)}
+                     className="w-full p-2 border rounded dark:bg-gray-800 dark:border-gray-700"
+                  >
+                      <option value="select">Feleletválasztós</option>
+                      <option value="score">Számszerű (Eredmény)</option>
+                  </select>
+               </div>
             </div>
 
             {/* Options Management (Simulated Field Array for MVP) */}
             <div className="pl-4 border-l-2 border-gray-200 dark:border-gray-700">
-               <label className="block text-xs uppercase text-gray-400 font-bold mb-2">Válaszlehetőségek</label>
+               <label className="block text-xs uppercase text-gray-400 font-bold mb-2">
+                 {form.watch(`markets.${mIndex}.type`) === 'score' ? 'Mezők (Kikre kell tippelni?)' : 'Válaszlehetőségek'}
+               </label>
                
-               {/* We rely on the watcher to know how many options current market has? 
-                   Actually, let's just render inputs based on the current form values for this index. 
-                   A clean way is to use a child component, but for speed: */}
                <MarketOptions 
                   control={form.control} 
                   marketIndex={mIndex} 
                   errors={form.formState.errors}
+                  type={form.watch(`markets.${mIndex}.type`)}
                />
             </div>
 
@@ -140,11 +152,15 @@ export default function Step3Markets({ eventId }: { eventId: string }) {
 // Note: Imports like usageFieldArray are already at the top of the file, do not re-import.
 import { Control } from 'react-hook-form'
 
-function MarketOptions({ control, marketIndex, errors }: { control: Control<EventMarketsForm>, marketIndex: number, errors: any }) {
+function MarketOptions({ control, marketIndex, errors, type }: { control: Control<EventMarketsForm>, marketIndex: number, errors: any, type: string }) {
   const { fields, append, remove } = useFieldArray({
     control,
     name: `markets.${marketIndex}.options`
   })
+
+  // If type switched to score and we have 0 options, maybe init with 2? 
+  // Should happen in parent but valid here too. 
+  // But let's just let user add them.
 
   return (
     <div className="space-y-2">
@@ -152,10 +168,10 @@ function MarketOptions({ control, marketIndex, errors }: { control: Control<Even
         <div key={option.id} className="flex items-center gap-2">
            <input 
              {...control.register(`markets.${marketIndex}.options.${oIndex}.label`)}
-             placeholder={`Opció ${oIndex + 1}`}
+             placeholder={type === 'score' ? `Mező ${oIndex + 1} (pl. Hazai csapat)` : `Opció ${oIndex + 1}`}
              className="flex-1 p-2 border rounded text-sm dark:bg-gray-800 dark:border-gray-700"
            />
-           {fields.length > 2 && (
+           {fields.length > 1 && (
              <button type="button" onClick={() => remove(oIndex)} className="text-gray-400 hover:text-red-500">
                <Trash2 className="w-4 h-4" />
              </button>
@@ -167,16 +183,16 @@ function MarketOptions({ control, marketIndex, errors }: { control: Control<Even
         onClick={() => append({ id: crypto.randomUUID(), label: '' })}
         className="text-sm text-blue-600 hover:underline flex items-center mt-2"
       >
-        <Plus className="w-3 h-3 mr-1" /> Opció felvétele
+        <Plus className="w-3 h-3 mr-1" /> {type === 'score' ? 'Mező felvétele' : 'Opció felvétele'}
       </button>
 
       {/* Show error for the options array itself (e.g. min 2 options) */}
        {errors?.markets?.[marketIndex]?.options?.message && (
-          <p className="text-red-500 text-xs">{errors?.markets?.[marketIndex]?.options?.message}</p> // Typo? .root? No, .message on array usually works with Zod refine
+          <p className="text-red-500 text-xs">{errors?.markets?.[marketIndex]?.options?.message}</p> 
        )}
        {/* Error for specific option empty */}
        {errors?.markets?.[marketIndex]?.options?.[0]?.label && (
-          <p className="text-red-500 text-xs">Az opciók nem lehetnek üresek.</p>
+          <p className="text-red-500 text-xs">A mezők nem lehetnek üresek.</p>
        )}
     </div>
   )
