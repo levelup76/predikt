@@ -150,6 +150,7 @@ export async function publishEventAction(eventId: string) {
 }
 
 export async function submitPredictionAction(eventId: string, picks: Record<string, any>) {
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Jelentkezz be a tippeléshez!' }
 
