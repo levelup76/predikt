@@ -241,7 +241,8 @@ export async function submitPredictionAction(eventId: string, picks: Record<stri
 
 const ADMIN_EMAILS = ['levelup.production@gmail.com'];
 
-export async function deleteEventAdminAction(eventId: string) {
+export async function deleteEventAdminAction(formData: FormData) {
+    const eventId = formData.get('id') as string;
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     
@@ -263,7 +264,8 @@ export async function deleteEventAdminAction(eventId: string) {
     return { success: true }
 }
 
-export async function toggleUserBanAction(userId: string) {
+export async function toggleUserBanAction(formData: FormData) {
+    const userId = formData.get('id') as string;
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     
