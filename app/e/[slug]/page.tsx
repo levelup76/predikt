@@ -72,12 +72,14 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   }
 
   // Theme styles map
-  const themeStyles = {
+  const themeMap: Record<string, string> = {
     modern: 'bg-gradient-to-br from-blue-600 to-purple-700',
     elegant: 'bg-gradient-to-br from-yellow-700 to-gray-900',
     retro: 'bg-gradient-to-br from-indigo-500 to-pink-500',
     neon: 'bg-black border-b-4 border-green-500',
-  }[event.theme || 'modern'] || 'bg-blue-600'
+  };
+
+  const themeStyles = themeMap[event.theme || 'modern'] || 'bg-blue-600'
 
   return (
     <div className="pb-20">
