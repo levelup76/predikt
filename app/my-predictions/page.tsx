@@ -64,7 +64,10 @@ export default async function MyPredictions() {
       ) : (
         <div className="grid gap-6">
           {predictions.map((prediction) => {
-            const event = prediction.events;
+            const eventData = prediction.events;
+            // @ts-ignore
+            const event = Array.isArray(eventData) ? eventData[0] : eventData;
+            
             // Handle case where event might be null (deleted?)
             if (!event) return null;
 
