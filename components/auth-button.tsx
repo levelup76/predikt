@@ -12,7 +12,10 @@ export default function AuthButton({ user }: { user: User | null }) {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${location.origin}/auth/callback`
+        redirectTo: `${location.origin}/auth/callback`,
+        queryParams: {
+          prompt: 'select_account'
+        }
       }
     })
   }
