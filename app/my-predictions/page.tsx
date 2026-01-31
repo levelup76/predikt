@@ -78,26 +78,29 @@ export default async function MyPredictions() {
             
             const isFullyAnswered = answeredCount === totalMarkets && totalMarkets > 0;
             
-            const themeColor = {
+            const themeMap: Record<string, string> = {
               modern: 'border-blue-500',
               elegant: 'border-yellow-600',
               retro: 'border-pink-500', 
               neon: 'border-green-400',
-            }[event.theme || 'modern'];
+            };
+            const themeColor = themeMap[event.theme || 'modern'] || themeMap.modern;
 
-            const statusColors = {
+            const statusColorMap: Record<string, string> = {
               open: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
               locked: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
               revealed: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', 
               draft: 'bg-gray-100 text-gray-800'
-            }[event.status] || 'bg-gray-100 text-gray-800';
+            };
+            const statusColors = statusColorMap[event.status || 'draft'] || 'bg-gray-100 text-gray-800';
 
-            const statusLabel = {
+            const statusLabelMap: Record<string, string> = {
                 open: 'Nyitva',
                 locked: 'Lezárva',
                 revealed: 'Kiértékelve',
                 draft: 'Vázlat'
-            }[event.status];
+            };
+            const statusLabel = statusLabelMap[event.status || 'draft'] || 'Ismeretlen';
 
             return (
               <div 
