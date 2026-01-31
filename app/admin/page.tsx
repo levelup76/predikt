@@ -149,7 +149,10 @@ export default async function SuperAdminPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex gap-2">
-                                                <form action={deleteEventAdminAction}>
+                                                <form action={async (formData) => {
+                                                    "use server"
+                                                    await deleteEventAdminAction(formData)
+                                                }}>
                                                     <input type="hidden" name="id" value={event.id} />
                                                     <button 
                                                         type="submit"
@@ -159,8 +162,11 @@ export default async function SuperAdminPage() {
                                                     </button>
                                                 </form>
                                                 {creator && (
-                                                    <form action={toggleBanAction}>
-                                                        <input type="hidden" name="userId" value={creator.id} />
+                                                    <form action={async (formData) => {
+                                                        "use server"
+                                                        await toggleUserBanAction(formData)
+                                                    }}>
+                                                        <input type="hidden" name="id" value={creator.id} />
                                                         <button 
                                                             type="submit"
                                                             className={`font-medium ml-2 ${creator.is_banned ? 'text-green-600 hover:text-green-500' : 'text-orange-600 hover:text-orange-500'} hover:underline`}
