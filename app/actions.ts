@@ -236,6 +236,3 @@ export async function submitPredictionAction(eventId: string, picks: Record<stri
 
   return { success: true }
 }
-
-  return { success: true }
-}
