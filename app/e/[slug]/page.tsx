@@ -14,7 +14,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   const { data: event } = await supabase
     .from('events')
     .select(`
-      id, title, description, category, lock_at, source_url, theme, status, cover_image, creator_id, result_json,
+      id, slug, title, description, category, lock_at, source_url, theme, status, cover_image, creator_id, result_json,
       markets (id, question, options_json, order, type)
     `)
     .eq('slug', slug)
