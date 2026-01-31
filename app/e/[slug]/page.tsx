@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from "next/navigation"
 import BettingForm from '@/components/event/betting-form'
-import { Calendar, Clock, Link as LinkIcon, Settings } from 'lucide-react'
+import ReportButton from '@/components/event/report-button'
+import ShareButton from '@/components/share-button'
+import { Calendar, Clock, Link as LinkIcon, Settings, BarChart3, Lock } from 'lucide-react'
 import Link from 'next/link'
 
 export default async function EventPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -12,7 +14,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   const { data: event } = await supabase
     .from('events')
     .select(`
-      id, title, description, category, lock_at, source_url, theme, status, cover_image, creator_id,
+      id, title, description, category, lock_at, source_url, theme, status, cover_image, creator_id, result_json,
       markets (id, question, options_json, order, type)
     `)
     .eq('slug', slug)
@@ -41,6 +43,33 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   }
   
   const isLocked = new Date(event.lock_at) < new Date() || event.status !== 'open'
+
+  // 3. If closed, fetch aggregate stats
+  let aggregateStats: Record<string, Record<string, number>> = {}
+  let totalPredictions = 0
+  
+  if (['locked', 'revealed'].includes(event.status)) {
+     const { data: allPredictions } = await supabase
+       .from('predictions')
+       .select('picks_json')
+       .eq('event_id', event.id)
+     
+     if (allPredictions) {
+       totalPredictions = allPredictions.length
+       
+       allPredictions.forEach(p => {
+         const picks = p.picks_json || {}
+         Object.keys(picks).forEach(marketId => {
+           // For simple select: pick is optionId string
+           const val = picks[marketId]
+           if (typeof val === 'string') {
+              if (!aggregateStats[marketId]) aggregateStats[marketId] = {}
+              aggregateStats[marketId][val] = (aggregateStats[marketId][val] || 0) + 1
+           } 
+         })
+       })
+     }
+  }
 
   // Theme styles map
   const themeStyles = {
@@ -78,6 +107,19 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
                    Hivatalos forrás
                  </a>
                )}
+               
+               <div className="ml-auto">
+                   <ShareButton title={event.title} slug={event.slug} />
+               </div>
+
+
+               <Link 
+                   href={`/e/${slug}/stats`}
+                   className="flex items-center gap-2 hover:underline hover:text-white transition-colors bg-white/10 px-3 py-1 rounded-full"
+               >
+                   <BarChart3 className="w-4 h-4" />
+                   Eredmények & Statisztikák
+               </Link>
 
                {isCreator && (
                    <Link 
@@ -113,7 +155,14 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             markets={event.markets}
             userPrediction={userPrediction}
             isLocked={isLocked || !user}
+            results={event.result_json}
+            stats={aggregateStats}
+            totalPredictions={totalPredictions}
           />
+          
+          <div className="mt-12 border-t pt-8">
+               <ReportButton eventId={event.id} />
+          </div>
        </div>
     </div>
   )

@@ -8,21 +8,29 @@ import { eventMarketsSchema, EventMarketsForm } from '@/lib/schemas'
 import { saveMarketsAction, publishEventAction } from '@/app/actions'
 import { Loader2, Plus, Trash2, CheckCircle2 } from 'lucide-react'
 
-export default function Step3Markets({ eventId }: { eventId: string }) {
+export default function Step3Markets({ eventId, initialData = [] }: { eventId: string, initialData?: any[] }) {
   const router = useRouter()
   const [isPublishing, setIsPublishing] = useState(false)
 
-  const form = useForm<EventMarketsForm>({
-    resolver: zodResolver(eventMarketsSchema),
-    defaultValues: {
-      markets: [
+  const defaultValues = initialData.length > 0 ? {
+    markets: initialData.map(m => ({
+      question: m.question,
+      type: m.type,
+      options: m.options_json
+    }))
+  } : {
+    markets: [
         { 
           question: '', 
           type: 'select', 
           options: [{ id: '1', label: '' }, { id: '2', label: '' }] 
         }
       ]
-    }
+  }
+
+  const form = useForm<EventMarketsForm>({
+    resolver: zodResolver(eventMarketsSchema),
+    defaultValues
   })
 
   const { fields: marketFields, append: appendMarket, remove: removeMarket } = useFieldArray({
@@ -62,7 +70,7 @@ export default function Step3Markets({ eventId }: { eventId: string }) {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6">3. Kérdések (Piacok)</h2>
+      <h2 className="text-2xl font-bold mb-6">3. Kérdések</h2>
       <p className="text-gray-500 mb-6 text-sm">Adj hozzá legalább egy kérdést, amire a felhasználók tippelhetnek.</p>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -98,6 +106,7 @@ export default function Step3Markets({ eventId }: { eventId: string }) {
                   >
                       <option value="select">Feleletválasztós</option>
                       <option value="score">Számszerű (Eredmény)</option>
+                      <option value="ranking">Sorbarendezős (Rangsor)</option>
                   </select>
                </div>
             </div>

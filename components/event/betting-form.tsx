@@ -5,6 +5,7 @@ import { submitPredictionAction } from '@/app/actions'
 import { useRouter } from 'next/navigation'
 import clsx from 'clsx'
 import { Loader2, CheckCircle, Lock } from 'lucide-react'
+import RankingMarket from './ranking-market'
 
 // Types for props
 type Option = { id: string, label: string }
@@ -15,12 +16,18 @@ export default function BettingForm({
   eventId, 
   markets, 
   userPrediction, 
-  isLocked 
+  isLocked,
+  results,
+  stats,
+  totalPredictions = 0
 }: { 
   eventId: string, 
   markets: Market[], 
   userPrediction: Prediction,
-  isLocked: boolean
+  isLocked: boolean,
+  results?: Record<string, any>,
+  stats?: Record<string, Record<string, number>>,
+  totalPredictions?: number
 }) {
   const router = useRouter()
   // Load initial picks from existing prediction or empty
@@ -58,6 +65,14 @@ export default function BettingForm({
             }
         }
     })
+  }
+
+  const handleRankingChange = (marketId: string, newOrder: string[]) => {
+    if (isLocked) return
+    setPicks(prev => ({
+        ...prev,
+        [marketId]: newOrder
+    }))
   }
 
   const handleSubmit = async () => {
@@ -124,39 +139,108 @@ export default function BettingForm({
                        
                        return (
                          <div key={option.id} className="flex items-center justify-between p-3 border rounded-lg dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-                            <span className="font-medium pr-4">{option.label}</span>
+                            <div className="flex flex-col">
+                                <span className="font-medium pr-4">{option.label}</span>
+                                {!!results && results[market.id] && (
+                                   <span className="text-xs text-gray-500 mt-1">Eredmény: <strong className="text-green-600">{results[market.id]?.[option.id]}</strong></span>
+                                )}
+                            </div>
                             <input 
                                type="number"
                                disabled={isLocked}
                                value={val}
                                onChange={(e) => handleScoreChange(market.id, option.id, e.target.value)}
-                               className="w-20 p-2 text-center text-lg font-bold border rounded-md dark:bg-gray-800 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none"
+                               className={clsx(
+                                   "w-20 p-2 text-center text-lg font-bold border rounded-md dark:bg-gray-800 dark:border-gray-600 outline-none",
+                                   !!results && results[market.id] && String(val) === String(results[market.id]?.[option.id]) 
+                                     ? "bg-green-100 border-green-500 text-green-700 ring-2 ring-green-500" 
+                                     : "focus:ring-2 focus:ring-blue-500"
+                               )}
                                placeholder="-"
                             />
                          </div>
                        )
                     })}
                  </div>
+               ) : market.type === 'ranking' ? (
+                  <div className="p-2">
+                     <p className="text-sm text-gray-500 mb-3 italic">Húzd a versenyzőket a helyes sorrendbe!</p>
+                     <RankingMarket 
+                        market={market}
+                        value={picks[market.id] as string[] | undefined}
+                        onChange={(newOrder) => handleRankingChange(market.id, newOrder)}
+                        disabled={isLocked}
+                     />
+                  </div>
                ) : (
                  <div className="grid gap-3 sm:grid-cols-2">
                   {market.options_json.map((option) => {
                     const isSelected = picks[market.id] === option.id
+                    
+                    // Stats calculation
+                    const voteCount = stats?.[market.id]?.[option.id] || 0
+                    const votePercent = totalPredictions > 0 ? Math.round((voteCount / totalPredictions) * 100) : 0
+                    
+                    // Result checking
+                    const isCorrect = results?.[market.id] === option.id
+                    const isRevealed = !!results
+                    
+                    let borderColor = "border-gray-200 dark:border-gray-700"
+                    let textColor = "text-gray-900 dark:text-gray-100"
+                    
+                    if (isSelected) {
+                        borderColor = "border-blue-600 bg-blue-50 dark:bg-blue-900/30 shadow-sm"
+                        textColor = "text-blue-700 dark:text-blue-300"
+                    }
+                    
+                    if (isRevealed) {
+                        if (isCorrect) {
+                            borderColor = "border-green-500 bg-green-50 dark:bg-green-900/20 ring-2 ring-green-500"
+                            textColor = "text-green-800 dark:text-green-200"
+                        } else if (isSelected && !isCorrect) {
+                            borderColor = "border-red-300 bg-red-50 dark:bg-red-900/20 opacity-70"
+                            textColor = "text-red-800 dark:text-red-200"
+                        } else {
+                            borderColor = "border-gray-200 dark:border-gray-700 opacity-50"
+                        }
+                    }
+
                     return (
                       <button
                         key={option.id}
                         onClick={() => handleSelect(market.id, option.id)}
                         disabled={isLocked}
                         className={clsx(
-                          "p-4 rounded-lg border-2 text-left transition-all relative",
-                          isSelected 
-                            ? "border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 shadow-sm" 
-                            : "border-gray-200 dark:border-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                          "p-4 rounded-lg border-2 text-left transition-all relative overflow-hidden",
+                          borderColor,
+                          textColor,
+                          !isLocked && !isRevealed && "hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                         )}
                       >
-                        <span className="font-medium">{option.label}</span>
-                        {isSelected && (
-                          <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-600" />
+                         {/* Progress Bar Background for Stats */}
+                         {stats && (
+                             <div 
+                                className={clsx("absolute left-0 top-0 bottom-0 transition-all opacity-10", isCorrect ? "bg-green-500" : "bg-blue-500")} 
+                                style={{ width: `${votePercent}%` }} 
+                             />
+                         )}
+
+                        <span className="font-medium relative z-10">{option.label}</span>
+                        {isSelected && !isRevealed && (
+                          <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-600 z-10" />
                         )}
+                        {isRevealed && isCorrect && (
+                          <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600 z-10" />
+                        )}
+
+                        {/* Stats Text */}
+                         {stats && (
+                             <div className="relative z-10 mt-1 min-h-[1.2rem] flex items-center">
+                                 <div className="text-xs font-bold opacity-70">
+                                     {votePercent}% ({voteCount} szavazat)
+                                 </div>
+                             </div>
+                         )}
                       </button>
                     )
                   })}

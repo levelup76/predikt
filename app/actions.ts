@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { EventDetailsForm, slugify } from '@/lib/schemas'
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 
 import { Resend } from 'resend'
 
@@ -148,9 +149,7 @@ export async function publishEventAction(eventId: string) {
   return { success: true, slug: data?.slug }
 }
 
-export async function submitPredictionAction(eventId: string, picks: Record<string, string>) {
-  const supabase = await createClient()
-  
+export async function submitPredictionAction(eventId: string, picks: Record<string, any>) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Jelentkezz be a tippeléshez!' }
 
@@ -236,3 +235,110 @@ export async function submitPredictionAction(eventId: string, picks: Record<stri
 
   return { success: true }
 }
+
+// --- ADMIN ACTIONS ---
+
+const ADMIN_EMAILS = ['levelup.production@gmail.com'];
+
+export async function deleteEventAdminAction(eventId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user || !user.email || !ADMIN_EMAILS.includes(user.email)) {
+        return { error: 'Unauthorized' }
+    }
+    
+    // Delete event (cascade should handle related predictions/markets if setup, but let's be safe)
+    // Deleting event triggers cascade usually.
+    const { error } = await supabase.from('events').delete().eq('id', eventId)
+    
+    if (error) {
+        console.error('Delete failed:', error)
+        return { error: 'Törlés sikertelen: ' + error.message }
+    }
+    
+    revalidatePath('/admin')
+    revalidatePath('/')
+    return { success: true }
+}
+
+export async function toggleUserBanAction(userId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user || !user.email || !ADMIN_EMAILS.includes(user.email)) {
+        return { error: 'Unauthorized' }
+    }
+    
+    // Check if is_banned column exists by fetching first
+    // Since we don't have is_banned in schema yet, we might error out.
+    // For this MVP, we will try to update 'is_banned'. 
+    // IF THIS FAILS, the user needs to run SQL.
+    
+    // First, let's check current status
+    const { data: profile } = await supabase.from('profiles').select('is_banned').eq('id', userId).single()
+    
+    // If column doesn't exist, this might just return null or error. 
+    // If it errors, we can't do much.
+    
+    const newStatus = !(profile?.is_banned)
+    
+    const { error } = await supabase.from('profiles').update({ is_banned: newStatus }).eq('id', userId)
+    
+    if (error) {
+        console.error('Ban failed:', error)
+        // Fallback: If column missing? 
+        return { error: 'Tiltás sikertelen (Hiányzó is_banned oszlop?): ' + error.message }
+    }
+    
+    revalidatePath('/admin')
+    return { success: true }
+}
+
+export async function submitReportAction(eventId: string, reason: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    // We insert into 'reports' table
+    const { error } = await supabase.from('reports').insert({
+        event_id: eventId,
+        reporter_id: user?.id || null, // Can be anonymous if strict, or null
+        reason: reason,
+        status: 'pending' // pending review
+    })
+
+    if (error) {
+        console.error('Report error:', error)
+        return { error: 'Jelentés sikertelen. Kérlek próbáld újra.' }
+    }
+
+    // Send Email Notification to Admin
+    try {
+        const { data: event } = await supabase.from('events').select('title, slug').eq('id', eventId).single()
+        const eventTitle = event?.title || 'Ismeretlen esemény'
+        const eventLink = event ? `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/e/${event.slug}` : '#'
+
+        await resend.emails.send({
+            from: 'Predikt <noreply@predikt.hu>', // Make sure you have a valid domain or use resend default for testing
+            to: ADMIN_EMAILS,
+            subject: `[Predikt] ÚJ JELENTÉS: ${eventTitle}`,
+            html: `
+              <h2>Új tartalom jelentés érkezett</h2>
+              <p>Egy felhasználó jelentette a következő eseményt:</p>
+              <ul>
+                 <li><strong>Esemény:</strong> ${eventTitle}</li>
+                 <li><strong>Indoklás:</strong> ${reason}</li>
+                 <li><strong>Jelentő:</strong> ${user?.email || 'Ismeretlen / Anonim'}</li>
+                 <li><strong>Link:</strong> <a href="${eventLink}">${eventLink}</a></li>
+              </ul>
+              <p>Kérlek, vizsgáld ki az esetet az <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin">Admin Dashboardon</a>.</p>
+            `
+        })
+    } catch (err) {
+        console.error('Failed to send admin email:', err)
+        // We don't fail the action if email fails
+    }
+
+    return { success: true }
+}
+

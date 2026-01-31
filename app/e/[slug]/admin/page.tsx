@@ -20,29 +20,19 @@ export default async function EventAdminPage({
     redirect("/auth");
   }
 
-  // Fetch event
-  const { data: event } = await supabase
+  // Fetch event basic info first
+  const { data: event, error: eventError } = await supabase
     .from("events")
-    .select(`
-        *,
-        markets(*),
-        predictions(
-            id, 
-            user_id, 
-            points, 
-            picks_json, 
-            profiles(full_name, username, avatar_url)
-        )
-    `)
+    .select(`*, markets(*)`)
     .eq("slug", slug)
     .single();
 
-  if (!event) {
+  if (eventError || !event) {
+    console.error("Event fetch error:", eventError);
     notFound();
   }
 
-  // Security Check: Only Creator or Admin can access
-  // Note: is_admin check would be good too, but for now strict creator check
+  // Security Check
   if (event.creator_id !== user.id) {
     return (
         <div className="container mx-auto py-20 text-center">
@@ -54,6 +44,36 @@ export default async function EventAdminPage({
         </div>
     )
   }
+
+  // Fetch predictions separately to avoid Join issues if FK is missing
+  const { data: predictions } = await supabase
+    .from("predictions")
+    .select("id, user_id, points, picks_json")
+    .eq("event_id", event.id);
+
+  // Fetch profiles for these predictions
+  const userIds = predictions?.map(p => p.user_id) || [];
+  let profiles: any[] = [];
+  
+  if (userIds.length > 0) {
+      const { data: pData } = await supabase
+        .from("profiles")
+        .select("id, full_name, username, avatar_url")
+        .in("id", userIds);
+      profiles = pData || [];
+  }
+
+  // Merge predictions with profiles
+  const predictionsWithProfiles = predictions?.map(p => ({
+      ...p,
+      profiles: profiles.find(prof => prof.id === p.user_id)
+  })) || [];
+
+  // Re-attach to event object so Dashboard works as expected
+  const eventWithPredictions = {
+      ...event,
+      predictions: predictionsWithProfiles
+  };
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
@@ -74,7 +94,7 @@ export default async function EventAdminPage({
         </div>
       </div>
 
-      <AdminDashboard event={event} />
+      <AdminDashboard event={eventWithPredictions} />
     </div>
   );
 }

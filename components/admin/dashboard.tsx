@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Crown, Lock, Globe, Save, RefreshCw, UserCheck, Trophy } from 'lucide-react'
+import { Crown, Lock, Globe, Save, RefreshCw, UserCheck, Trophy, Edit3, Settings } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useFieldArray, useForm } from 'react-hook-form'
+import Link from 'next/link'
+import { updateEventDetailsAction } from '@/app/actions' // Adjust path if needed
 
 type Event = any // TODO: Proper types
 
@@ -15,12 +17,32 @@ export default function AdminDashboard({ event }: { event: Event }) {
     // Status management
     const [status, setStatus] = useState(event.status)
     const [isUpdating, setIsUpdating] = useState(false)
+    const [activeTab, setActiveTab] = useState<'status' | 'edit' | 'results'>('status')
 
-    // Manual Scoring Form
-    // Format requested: "Name - Score <+ Add Item>"
-    // This implies we can add arbitrary items. 
-    // BUT we should probably pre-fill it with existing users if they exist.
-    
+    // DETAILS FORM
+    const { register: registerDetails, handleSubmit: handleSubmitDetails, formState: { errors: detailsErrors } } = useForm({
+        defaultValues: {
+            title: event.title,
+            description: event.description,
+            category: event.category,
+            lock_at: event.lock_at ? new Date(event.lock_at).toISOString().slice(0, 16) : '',
+            source_url: event.source_url || ''
+        }
+    })
+
+    const onUpdateDetails = async (data: any) => {
+        setIsUpdating(true)
+        const res = await updateEventDetailsAction(event.id, data)
+        setIsUpdating(false)
+        if (res.error) {
+            alert(res.error)
+        } else {
+            alert('Sikeres mentés!')
+            router.refresh()
+        }
+    }
+
+    // RESULTS FORM
     const { register, control, handleSubmit, formState: { errors } } = useForm({
         defaultValues: {
             results: event.result_json || {}
@@ -115,7 +137,39 @@ export default function AdminDashboard({ event }: { event: Event }) {
 
     return (
         <div className="space-y-8">
+            {/* TABS */}
+            <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
+                <button 
+                  onClick={() => setActiveTab('status')}
+                  className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${activeTab === 'status' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                >
+                    <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4" />
+                        Státusz
+                    </div>
+                </button>
+                <button 
+                  onClick={() => setActiveTab('edit')}
+                  className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${activeTab === 'edit' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                >
+                    <div className="flex items-center gap-2">
+                        <Edit3 className="w-4 h-4" />
+                        Szerkesztés
+                    </div>
+                </button>
+                <button 
+                  onClick={() => setActiveTab('results')}
+                  className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${activeTab === 'results' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                >
+                    <div className="flex items-center gap-2">
+                        <Trophy className="w-4 h-4" />
+                        Eredmények
+                    </div>
+                </button>
+            </div>
+
             {/* 1. Status Control Panel */}
+            {activeTab === 'status' && (
             <section className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                 <h2 className="text-xl font-bold mb-4 flex items-center">
                     <Globe className="w-5 h-5 mr-2" />
@@ -156,8 +210,79 @@ export default function AdminDashboard({ event }: { event: Event }) {
                     Jelenlegi státusz: <span className="font-bold uppercase">{status}</span>
                 </div>
             </section>
+            )}
 
-           {/* 2. Result Resolution (Eredményhirdetés) */}
+           {/* 2. Edit Section */}
+           {activeTab === 'edit' && (
+               <section className="space-y-6">
+                   <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                       <h2 className="text-xl font-bold mb-4 flex items-center">
+                           <Settings className="w-5 h-5 mr-2" />
+                           Alapadatok Módosítása
+                       </h2>
+                       <form onSubmit={handleSubmitDetails(onUpdateDetails)} className="space-y-4 max-w-2xl">
+                           <div>
+                               <label className="block text-sm font-medium mb-1">Esemény Címe</label>
+                               <input {...registerDetails('title')} className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                           </div>
+                           <div>
+                               <label className="block text-sm font-medium mb-1">Leírás</label>
+                               <textarea {...registerDetails('description')} className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" rows={3}></textarea>
+                           </div>
+                           <div className="grid grid-cols-2 gap-4">
+                               <div>
+                                   <label className="block text-sm font-medium mb-1">Kategória</label>
+                                   <select {...registerDetails('category')} className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600">
+                                       <option value="sport">Sport</option>
+                                       <option value="politics">Politika / Közélet</option>
+                                       <option value="awards">Díjak / Gálák</option>
+                                       <option value="other">Egyéb</option>
+                                   </select>
+                               </div>
+                               <div>
+                                   <label className="block text-sm font-medium mb-1">Lezárás Dátuma</label>
+                                   <input type="datetime-local" {...registerDetails('lock_at')} className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                               </div>
+                           </div>
+                           <div>
+                               <label className="block text-sm font-medium mb-1">Forrás URL (opcionális)</label>
+                               <input {...registerDetails('source_url')} className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                           </div>
+                           <button 
+                             type="submit" 
+                             disabled={isUpdating || ['locked', 'revealed'].includes(status)}
+                             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                           >
+                             {isUpdating ? 'Mentés...' : 'Változások Mentése'}
+                           </button>
+                           {['locked', 'revealed'].includes(status) && <p className="text-xs text-red-500 mt-2">Lezárt esemény nem szerkeszthető.</p>}
+                       </form>
+                   </div>
+
+                   <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                       <h2 className="text-xl font-bold mb-4 flex items-center">
+                           <Edit3 className="w-5 h-5 mr-2" />
+                           Kérdések Szerkesztése
+                       </h2>
+                       <p className="text-sm text-gray-500 mb-4">
+                           A kérdések szerkesztésére a varázsló felületét használhatod.
+                           <br />
+                           <strong>Figyelem:</strong> Ha már érkezett szavazat, a kérdések nem módosíthatók!
+                       </p>
+                       
+                       <Link 
+                          href={`/create/${event.id}/markets`}
+                          className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                       >
+                           <Edit3 className="w-4 h-4 mr-2" />
+                           Kérdések szerkesztő megnyitása
+                       </Link>
+                   </div>
+               </section>
+           )}
+
+           {/* 3. Result Resolution (Eredményhirdetés) */}
+           {activeTab === 'results' && (
            <section className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-bold flex items-center">
@@ -224,6 +349,7 @@ export default function AdminDashboard({ event }: { event: Event }) {
                      </div>
                 </div>
            </section>
+           )}
         </div>
     )
 }

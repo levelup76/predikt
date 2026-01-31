@@ -16,6 +16,13 @@ export default async function MarketsPage({ params }: { params: Promise<{ id: st
     return <div>Nincs jogosultságod szerkeszteni ezt az eseményt.</div>
   }
 
+  // Fetch existing markets
+  const { data: markets } = await supabase
+    .from('markets')
+    .select('*')
+    .eq('event_id', id)
+    .order('order', { ascending: true })
+
   return (
     <div className="py-10">
        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -27,7 +34,7 @@ export default async function MarketsPage({ params }: { params: Promise<{ id: st
            <span className="font-bold text-blue-600">3. Kérdések</span>
          </div>
 
-         <Step3Markets eventId={id} />
+         <Step3Markets eventId={id} initialData={markets || []} />
       </div>
     </div>
   )
