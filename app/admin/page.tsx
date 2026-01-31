@@ -1,7 +1,7 @@
 
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { deleteEventAdminAction, toggleBanAction } from "../actions";
+import { deleteEventAdminAction, toggleUserBanAction } from "../actions";
 
 export default async function SuperAdminPage() {
     const supabase = await createClient();
