@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     try {
         console.log('API: Fetching font from remote URL...');
         // Using jsDelivr for a reliable WOFF source (Satori supports WOFF)
-        const fontUrl = 'https://cdn.jsdelivr.net/npm/@fontsource/roboto-mono@5.0.8/files/roboto-mono-latin-700-normal.woflatin-700-normal.woff';
+        const fontUrl = 'https://cdn.jsdelivr.net/npm/@fontsource/roboto-mono@5.0.8/files/roboto-mono-latin-700-normal.woff';
         const fontRes = await fetch(fontUrl);
         
         if (fontRes.ok) {
