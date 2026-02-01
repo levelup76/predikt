@@ -163,7 +163,8 @@ export default function SharePicksModal({
     try {
         const canvas = await html2canvas(clone, {
             scale: 2, // Retina quality
-            useCORS: false, // Local content
+            useCORS: true, // Enable CORS to safely load external images if headers allow
+            allowTaint: false, // Must be false to ensure we can export to Blob (security)
             backgroundColor: '#ffffff',
             logging: false,
             width: offsetWidth,
@@ -172,6 +173,20 @@ export default function SharePicksModal({
             scrollY: 0,
             windowWidth: document.documentElement.offsetWidth, 
             windowHeight: document.documentElement.offsetHeight,
+            ignoreElements: (element) => {
+                // Ignore external URL links and lazyload images as requested to improve stability
+                if (element.tagName === "A") {
+                    const anchor = element as HTMLAnchorElement;
+                    // Check if host is different (external link)
+                    if (anchor.host && anchor.host !== window.location.host) {
+                        return true;
+                    }
+                }
+                if (element.getAttribute('loading') === "lazy") {
+                    return true;
+                }
+                return false;
+            }
         });
 
         return new Promise<Blob | null>((resolve) => {
