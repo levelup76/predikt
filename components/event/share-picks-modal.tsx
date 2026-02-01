@@ -59,6 +59,7 @@ export default function SharePicksModal({
         if (!blob) return;
         
         // Share / Download logic
+        const file = new File([blob], `predikt-${eventSlug}-picks.png`, { type: 'image/png' });
         const isMobile = typeof navigator !== 'undefined' && (navigator.maxTouchPoints > 0 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
         let shared = false;
 
