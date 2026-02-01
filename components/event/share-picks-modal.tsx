@@ -116,40 +116,56 @@ export default function SharePicksModal({
 
 
   const generateTicketBlob = async () => {
-    if (!ticketRef.current) return null;
+    console.log('TicketGen: Starting generation...');
+    if (!ticketRef.current) {
+        console.error('TicketGen: Ticket ref is null');
+        return null;
+    }
     
     // Tiny delay to ensure rendering is complete
-    await new Promise(resolve => setTimeout(resolve, 50));
+    console.log('TicketGen: Waiting for render (100ms)...');
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
         const { offsetWidth, offsetHeight } = ticketRef.current;
+        console.log(`TicketGen: Dimensions: ${offsetWidth}x${offsetHeight}`);
 
+        console.log('TicketGen: Calling html2canvas...');
         const canvas = await html2canvas(ticketRef.current, {
             scale: 2, // Retina quality
             useCORS: false, // Local content only
-            backgroundColor: '#ffffff', // Explicit white background prevents transparency issues
-            logging: false,
+            backgroundColor: '#ffffff', // Explicit white background
+            logging: true,
             width: offsetWidth,
             height: offsetHeight,
+            scrollX: 0,   // Force scroll position to 0 to prevent Safari glitches
+            scrollY: 0,
             onclone: (clonedDoc) => {
+                console.log('TicketGen: onclone triggered');
                 const element = clonedDoc.querySelector('[data-ticket-container="true"]');
                 if (element instanceof HTMLElement) {
-                    // Start fresh without potential visual artifacts
                     element.style.boxShadow = 'none';
                     element.style.borderRadius = '0';
-                    // Simplify radial gradient for Safari stability if needed
-                    // element.style.backgroundImage = 'none'; 
+                    // Ensure full visibility in clone
+                    element.style.transform = 'none'; 
                 }
             }
         });
+        console.log('TicketGen: html2canvas completed, converting to Blob...');
 
         return new Promise<Blob | null>((resolve) => {
             canvas.toBlob((blob) => {
-                resolve(blob);
+                if (blob) {
+                    console.log(`TicketGen: Blob created successfully. Size: ${blob.size}, Type: ${blob.type}`);
+                    resolve(blob);
+                } else {
+                    console.error('TicketGen: Blob creation returned null');
+                    resolve(null);
+                }
             }, 'image/png');
         });
     } catch (error) {
-        console.error('HTML2Canvas Error:', error);
+        console.error('TicketGen: Critical Error during generation:', error);
         throw error;
     }
   }
@@ -210,9 +226,6 @@ export default function SharePicksModal({
                     color: COLORS.black,
                 }}
              >
-                 {/* Watermark/Pattern */}
-                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: "radial-gradient(#000 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
-
                  {/* Header */}
                  <div 
                     className="text-center mb-6 pb-6 border-b"
