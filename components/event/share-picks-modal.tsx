@@ -126,35 +126,57 @@ export default function SharePicksModal({
     console.log('TicketGen: Waiting for render (100ms)...');
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    try {
-        const { offsetWidth, offsetHeight } = ticketRef.current;
-        console.log(`TicketGen: Dimensions: ${offsetWidth}x${offsetHeight}`);
+    // Clone the element manually to avoid Modal/Context issues in Safari
+    const originalElement = ticketRef.current;
+    const { offsetWidth, offsetHeight } = originalElement;
+    
+    const clone = originalElement.cloneNode(true) as HTMLElement;
+    
+    // Setup clone styles to be rendered off-screen but visible to the engine
+    clone.style.position = 'fixed';
+    clone.style.top = '-10000px';
+    clone.style.left = '-10000px';
+    clone.style.width = `${offsetWidth}px`;
+    clone.style.height = `${offsetHeight}px`;
+    clone.style.zIndex = '-1000';
+    clone.style.background = '#ffffff'; // Force white background
+    
+    // Apply manual padding fix to the clone directly
+    const innerContainer = clone.querySelector('#ticket-inner-container') as HTMLElement;
+    if (innerContainer) {
+        innerContainer.style.padding = '0px 16px 16px 16px';
+    }
+    
+    // Remove shadows/borders from the container itself for clean cut
+    clone.style.boxShadow = 'none';
+    clone.style.borderRadius = '0';
 
-        console.log('TicketGen: Calling html2canvas...');
-        const canvas = await html2canvas(ticketRef.current, {
+    document.body.appendChild(clone);
+
+    try {
+        console.log(`TicketGen: Dimensions: ${offsetWidth}x${offsetHeight}`);
+        console.log('TicketGen: Calling html2canvas on off-screen clone...');
+        
+        const canvas = await html2canvas(clone, {
             scale: 2, // Retina quality
-            useCORS: false, // Local content only
-            backgroundColor: '#ffffff', // Explicit white background
+            useCORS: false, // Local content
+            backgroundColor: '#ffffff',
             logging: true,
             width: offsetWidth,
             height: offsetHeight,
-            scrollX: 0,   // Force scroll position to 0 to prevent Safari glitches
+            scrollX: 0,
             scrollY: 0,
-            onclone: (clonedDoc) => {
-                console.log('TicketGen: onclone triggered');
-                const element = clonedDoc.querySelector('[data-ticket-container="true"]');
-                if (element instanceof HTMLElement) {
-                    element.style.boxShadow = 'none';
-                    element.style.borderRadius = '0';
-                    // Ensure full visibility in clone
-                    element.style.transform = 'none'; 
-                }
-            }
+            windowWidth: document.documentElement.offsetWidth, // Help Safari understand viewport
+            windowHeight: document.documentElement.offsetHeight,
         });
+        
         console.log('TicketGen: html2canvas completed, converting to Blob...');
 
         return new Promise<Blob | null>((resolve) => {
             canvas.toBlob((blob) => {
+                // Cleanup
+                document.body.removeChild(clone);
+                
                 if (blob) {
                     console.log(`TicketGen: Blob created successfully. Size: ${blob.size}, Type: ${blob.type}`);
                     resolve(blob);
@@ -166,6 +188,9 @@ export default function SharePicksModal({
         });
     } catch (error) {
         console.error('TicketGen: Critical Error during generation:', error);
+        if (document.body.contains(clone)) {
+            document.body.removeChild(clone);
+        }
         throw error;
     }
   }
