@@ -7,6 +7,10 @@ export const runtime = 'nodejs'; // Explicit Node.js runtime
 
 export async function POST(req: NextRequest) {
   // v1.1 - Clean build verify
+  if (req.method !== 'POST') {
+      return new Response('Method Not Allowed', { status: 405, headers: { 'Allow': 'POST' } });
+  }
+
   try {
     const { eventTitle, eventSlug, items } = await req.json();
 
@@ -211,7 +215,7 @@ export async function POST(req: NextRequest) {
       console.error('API: Failed to generate with custom font, falling back:', fontError);
     }
     
-    // Fallback: Return image without custom fonts if font loading failed or font generation crashed
+    // Fallback: Return image without custom fonts
     return new ImageResponse(
       (
         <div
@@ -255,7 +259,7 @@ export async function POST(req: NextRequest) {
                 }}
              >
                  <span style={{ fontSize: '30px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1px' }}>PREDIKT</span>
-                 <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', color: '#6B7280', marginTop: '4px' }}>Hivatalos Tippszelvény</span>
+                 <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', color: '#6B7280', marginTop: '4px' }}>Tippszelvény</span>
                  
                  <div 
                     style={{
