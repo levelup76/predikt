@@ -53,8 +53,11 @@ export default function SharePicksModal({
         // Share / Download logic
         const file = new File([blob], `predikt-${eventSlug}-picks.png`, { type: 'image/png' });
         
+        // Only try to share on mobile/touch devices where native share sheet is expected
+        const isMobile = typeof navigator !== 'undefined' && (navigator.maxTouchPoints > 0 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
         let shared = false;
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+
+        if (isMobile && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
              try {
                  await navigator.share({
                      files: [file],
@@ -116,15 +119,10 @@ export default function SharePicksModal({
 
 
   const generateTicketBlob = async () => {
-    console.log('TicketGen: Starting generation...');
-    if (!ticketRef.current) {
-        console.error('TicketGen: Ticket ref is null');
-        return null;
-    }
+    if (!ticketRef.current) return null;
     
     // Tiny delay to ensure rendering is complete
-    console.log('TicketGen: Waiting for render (100ms)...');
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     // Clone the element manually to avoid Modal/Context issues in Safari
     const originalElement = ticketRef.current;
@@ -133,8 +131,6 @@ export default function SharePicksModal({
     const clone = originalElement.cloneNode(true) as HTMLElement;
     
     // Setup clone styles to be rendered off-screen but visible to the engine
-    // FIX: Do not use negative coordinates (-10000px) as it causes html2canvas to create a massive canvas/document clone (25s+ render time)
-    // Instead, place it at top-left but behind everything using z-index.
     clone.style.position = 'fixed';
     clone.style.top = '0px';
     clone.style.left = '0px';
@@ -142,7 +138,6 @@ export default function SharePicksModal({
     clone.style.height = `${offsetHeight}px`;
     clone.style.zIndex = '-9999'; 
     clone.style.background = '#ffffff'; // Force white background
-    clone.style.opacity = '1'; // Ensure it is technically visible
     clone.style.pointerEvents = 'none'; // No interactions
     
     // Apply manual padding fix to the clone directly
@@ -158,40 +153,28 @@ export default function SharePicksModal({
     document.body.appendChild(clone);
 
     try {
-        console.log(`TicketGen: Dimensions: ${offsetWidth}x${offsetHeight}`);
-        console.log('TicketGen: Calling html2canvas on off-screen clone...');
-        
         const canvas = await html2canvas(clone, {
             scale: 2, // Retina quality
             useCORS: false, // Local content
             backgroundColor: '#ffffff',
-            logging: true,
+            logging: false,
             width: offsetWidth,
             height: offsetHeight,
             scrollX: 0,
             scrollY: 0,
-            windowWidth: document.documentElement.offsetWidth, // Help Safari understand viewport
+            windowWidth: document.documentElement.offsetWidth, 
             windowHeight: document.documentElement.offsetHeight,
         });
-        
-        console.log('TicketGen: html2canvas completed, converting to Blob...');
 
         return new Promise<Blob | null>((resolve) => {
             canvas.toBlob((blob) => {
                 // Cleanup
                 document.body.removeChild(clone);
-                
-                if (blob) {
-                    console.log(`TicketGen: Blob created successfully. Size: ${blob.size}, Type: ${blob.type}`);
-                    resolve(blob);
-                } else {
-                    console.error('TicketGen: Blob creation returned null');
-                    resolve(null);
-                }
+                resolve(blob);
             }, 'image/png');
         });
     } catch (error) {
-        console.error('TicketGen: Critical Error during generation:', error);
+        console.error('TicketGen Error:', error);
         if (document.body.contains(clone)) {
             document.body.removeChild(clone);
         }
