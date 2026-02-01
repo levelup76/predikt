@@ -230,7 +230,7 @@ export default function SharePicksModal({
                     style={{ borderColor: COLORS.black }}
                  >
                      <h2 className="text-3xl font-black uppercase tracking-tighter mb-1">PREDIKT</h2>
-                     <p className="text-xs font-bold uppercase tracking-widest" style={{ color: COLORS.gray500 }}>Hivatalos Tippszelvény</p>
+                     <p className="text-xs font-bold uppercase tracking-widest" style={{ color: COLORS.gray500 }}>Tippszelvény</p>
                      
                      <div 
                         className="mt-4 border-2 inline-block min-w-[120px]"

@@ -56,6 +56,8 @@ export default async function CreateEventPreviewPage({ params }: { params: Promi
             <div className="bg-white dark:bg-gray-900 border-2 border-black dark:border-white p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] mb-8">
                  <BettingForm 
                        eventId="preview"
+                       eventTitle={event.title}
+                       eventSlug={event.slug || 'preview'}
                        isLocked={false}
                        userPrediction={null}
                        markets={markets || []}

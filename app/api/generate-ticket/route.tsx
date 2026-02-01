@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
                     }}
                  >
                      <span style={{ fontSize: '30px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-1px' }}>PREDIKT</span>
-                     <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', color: '#6B7280', marginTop: '4px' }}>Hivatalos Tippszelvény</span>
+                     <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', color: '#6B7280', marginTop: '4px' }}>Tippszelvény</span>
                      
                      <div 
                         style={{
