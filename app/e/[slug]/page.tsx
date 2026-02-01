@@ -72,82 +72,78 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   }
 
   // Theme styles map
-  const themeMap: Record<string, string> = {
-    modern: 'bg-gradient-to-br from-blue-600 to-purple-700',
-    elegant: 'bg-gradient-to-br from-yellow-700 to-gray-900',
-    retro: 'bg-gradient-to-br from-indigo-500 to-pink-500',
-    neon: 'bg-black border-b-4 border-green-500',
-  };
-
-  const themeStyles = themeMap[event.theme || 'modern'] || 'bg-blue-600'
-
   return (
-    <div className="pb-20">
+    <div className="pb-20 min-h-screen bg-gray-50 dark:bg-gray-950 font-mono">
        
        {/* Hero Section */}
-       <div className={`-mx-4 -mt-4 mb-8 p-8 ${themeStyles} text-white shadow-lg`}>
-          <div className="container mx-auto max-w-4xl">
-             <div className="flex items-center gap-2 mb-4 opacity-80 text-sm font-bold tracking-wider uppercase">
-               <span>{event.category}</span>
-               <span>•</span>
-               <span className={isLocked ? "text-red-300" : "text-green-300"}>
-                 {isLocked ? "Lezárva" : "Tippelés Nyitva"}
+       <div className={`w-full border-b-4 border-black dark:border-white bg-black dark:bg-gray-900 text-white relative overflow-hidden`}>
+          {/* Pattern */}
+          <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: "radial-gradient(#ffffff 2px, transparent 2px)", backgroundSize: "20px 20px" }}></div>
+          
+          <div className="container mx-auto max-w-4xl py-12 px-4 relative z-10">
+             <div className="flex items-center gap-3 mb-6">
+               <span className="bg-yellow-400 text-black text-xs font-black px-2 py-1 uppercase tracking-widest border-2 border-white">
+                 {event.category || 'Általános'}
+               </span>
+               <span className={`bg-white text-black text-xs font-black px-2 py-1 uppercase tracking-widest border-2 border-white flex items-center`}>
+                 {isLocked ? <><Lock className="w-3 h-3 mr-1"/> Lezárva</> : 'Nyitva'}
                </span>
              </div>
              
-             <h1 className="text-3xl md:text-5xl font-extrabold mb-4 leading-tight">{event.title}</h1>
-             <p className="text-lg opacity-90 max-w-2xl">{event.description}</p>
+             <h1 className="text-4xl md:text-6xl font-black mb-6 leading-none uppercase tracking-tight">{event.title}</h1>
+             <p className="text-xl font-bold opacity-90 max-w-2xl border-l-4 border-yellow-400 pl-4 mb-8">{event.description}</p>
              
-             <div className="mt-8 flex flex-wrap gap-6 text-sm font-medium opacity-90 items-center">
-               <div className="flex items-center gap-2">
-                 <Clock className="w-5 h-5" />
+             <div className="flex flex-wrap gap-4 text-sm font-bold opacity-100 items-center">
+               <div className="flex items-center gap-2 bg-white text-black px-3 py-2 border-2 border-white uppercase shadow-[4px_4px_0px_0px_rgba(255,255,255,0.5)]">
+                 <Clock className="w-4 h-4" />
                  Lezárás: {new Date(event.lock_at).toLocaleString('hu-HU')}
                </div>
+               
                {event.source_url && (
-                 <a href={event.source_url} target="_blank" className="flex items-center gap-2 hover:underline hover:text-white transition-colors">
-                   <LinkIcon className="w-5 h-5" />
+                 <a href={event.source_url} target="_blank" className="flex items-center gap-2 bg-black text-white border-2 border-white px-3 py-2 hover:bg-white hover:text-black transition-colors uppercase">
+                   <LinkIcon className="w-4 h-4" />
                    Hivatalos forrás
                  </a>
                )}
                
-               <div className="ml-auto">
+               <div className="w-full md:ml-auto md:w-auto flex flex-wrap gap-4 mt-4 md:mt-0">
                    <ShareButton title={event.title} slug={event.slug} />
-               </div>
-
-
-               <Link 
-                   href={`/e/${slug}/stats`}
-                   className="flex items-center gap-2 hover:underline hover:text-white transition-colors bg-white/10 px-3 py-1 rounded-full"
-               >
-                   <BarChart3 className="w-4 h-4" />
-                   Eredmények & Statisztikák
-               </Link>
-
-               {isCreator && (
+                   
                    <Link 
-                       href={`/e/${slug}/admin`}
-                       className="ml-auto bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-colors text-white px-4 py-2 rounded-lg flex items-center shadow-lg border border-white/10"
+                       href={`/e/${slug}/stats`}
+                       className="flex items-center gap-2 hover:bg-white hover:text-black transition-colors border-2 border-white px-4 py-2 uppercase font-black"
                    >
-                       <Settings className="w-4 h-4 mr-2" />
-                       Esemény Kezelése
+                       <BarChart3 className="w-4 h-4" />
+                       Eredmények
                    </Link>
-               )}
+
+                   {isCreator && (
+                       <Link 
+                           href={`/e/${slug}/admin`}
+                           className="bg-yellow-400 text-black hover:bg-yellow-300 transition-colors px-4 py-2 flex items-center shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] border-2 border-transparent uppercase font-black"
+                       >
+                           <Settings className="w-4 h-4 mr-2" />
+                           Kezelés
+                       </Link>
+                   )}
+               </div>
              </div>
           </div>
        </div>
 
        {/* Content */}
-       <div className="container mx-auto max-w-4xl">
+       <div className="container mx-auto max-w-4xl px-4 mt-8">
           {isLocked && !userPrediction && (
-             <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8 text-yellow-800">
+             <div className="bg-yellow-100 border-2 border-black p-6 mb-8 text-black font-bold uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center gap-4">
+               <Lock className="w-6 h-6" />
                A tippelés lezárult, és sajnos te nem adtál le tippet.
              </div>
           )}
 
           {!user && !isLocked && (
-            <div className="bg-blue-50 border border-blue-200 p-6 rounded-xl text-center mb-8">
-               <h3 className="text-lg font-bold text-blue-900 mb-2">Szeretnél tippelni?</h3>
-               <p className="text-blue-700 mb-4">Jelentkezz be Google fiókoddal a tippjeid rögzítéséhez!</p>
+            <div className="bg-blue-100 border-2 border-black p-8 text-center mb-12 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+               <h3 className="text-2xl font-black text-black mb-4 uppercase">Szeretnél tippelni?</h3>
+               <p className="text-black font-medium mb-6">Jelentkezz be Google fiókoddal a tippjeid rögzítéséhez!</p>
                {/* Button is in header, but user needs nudge */}
             </div>
           )}
@@ -162,7 +158,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             totalPredictions={totalPredictions}
           />
           
-          <div className="mt-12 border-t pt-8">
+          <div className="mt-16 border-t-4 border-black dark:border-white pt-8 mb-12">
                <ReportButton eventId={event.id} />
           </div>
        </div>

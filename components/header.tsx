@@ -9,23 +9,31 @@ export default async function Header() {
   const { data: { user } } = await supabase.auth.getUser()
 
   return (
-    <header className="flex items-center justify-between p-4 border-b bg-white dark:bg-gray-900 sticky top-0 z-50">
+    <header className="flex items-center justify-between p-4 border-b-2 border-black dark:border-white bg-white dark:bg-gray-900 sticky top-0 z-50">
       <div className="flex items-center gap-6">
-        <Link href="/" className="font-bold text-xl tracking-tight flex items-center gap-2">
+        <Link href="/" className="font-black text-2xl tracking-tighter uppercase flex items-center gap-3 hover:bg-yellow-400 transition-colors px-2 -ml-2">
           {/* Use logo.png if available, fallback to emoji if fails (would need client side check) */}
           <div className="relative w-10 h-10">
-             <Image src="/logo.png" alt="Predikt Logo" width={550} height={550} className="object-contain" />
+             <Image 
+               src="/logo.png?v=2" 
+               alt="Predikt Logo" 
+               width={550} 
+               height={550} 
+               className="object-contain" 
+               unoptimized
+             />
           </div>
           Predikt
         </Link>
-        <nav className="hidden md:flex items-center gap-4 text-sm font-medium">
-          <Link href="/" className="hover:text-blue-600 transition-colors">Felfedezés</Link>
-          <Link href="/archive" className="hover:text-blue-600 transition-colors">Korábbi</Link>
-          <Link href="/about" className="hover:text-blue-600 transition-colors">Rólunk</Link>
+        <nav className="hidden md:flex items-center gap-1 font-bold text-sm uppercase">
+          <Link href="/" className="px-3 py-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all">Felfedezés</Link>
+          <Link href="/archive" className="px-3 py-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all">Korábbi</Link>
+          <Link href="/about" className="px-3 py-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all">Rólunk</Link>
           {user && (
              <>
-               <Link href="/my-predictions" className="hover:text-blue-600 transition-colors">Tippjeim</Link>
-               <Link href="/my-events" className="hover:text-blue-600 transition-colors">Eseményeim</Link>
+               <span className="text-gray-300">|</span>
+               <Link href="/my-predictions" className="px-3 py-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all">Tippjeim</Link>
+               <Link href="/my-events" className="px-3 py-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all">Eseményeim</Link>
              </>
           )}
         </nav>
@@ -35,9 +43,9 @@ export default async function Header() {
         {user && (
           <Link 
             href="/create" 
-            className="hidden sm:flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-full text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="hidden sm:flex items-center gap-1.5 bg-yellow-400 text-black border-2 border-black px-4 py-1.5 text-sm font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-0.5 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none transition-all uppercase"
           >
-            <PlusCircle className="w-4 h-4" />
+            <PlusCircle className="w-5 h-5" />
             Új Esemény
           </Link>
         )}

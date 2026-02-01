@@ -94,27 +94,29 @@ export default function RankingMarket({
               onDragOver={(e) => handleDragOver(e, index)}
               onDrop={(e) => handleDrop(e, index)}
               className={clsx(
-                "flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border rounded-lg shadow-sm select-none transition-all",
-                disabled ? "opacity-70 cursor-not-allowed" : "cursor-move hover:border-blue-400 hover:shadow-md",
-                "active:cursor-grabbing"
+                "flex items-center gap-3 p-4 bg-white dark:bg-black border-2 border-black dark:border-white select-none transition-all",
+                disabled ? "opacity-70 cursor-not-allowed" : "cursor-move hover:bg-yellow-100 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-[2px]",
+                "active:cursor-grabbing active:shadow-none active:translate-x-0 active:translate-y-0"
               )}
             >
-               <span className="font-bold text-gray-400 w-6 text-center">#{index + 1}</span>
+               <span className="font-black text-black dark:text-white w-8 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-800 border-2 border-black dark:border-white">
+                  {index + 1}
+               </span>
                
-               <div className="flex-1 font-medium">
+               <div className="flex-1 font-bold uppercase text-lg">
                   {option.label}
                </div>
 
-               <GripVertical className="text-gray-300" />
+               <GripVertical className="text-black dark:text-white w-6 h-6" />
                
                {/* Mobile/Accessibility controls (could be hidden on desktop optionally, but useful everywhere) */}
                {!disabled && (
-                   <div className="flex flex-col gap-1 ml-2">
+                   <div className="flex flex-col gap-1 ml-2 border-l-2 border-black pl-2">
                       <button 
                         type="button"
                         disabled={index === 0}
                         onClick={() => moveItem(index, 'up')}
-                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded disabled:opacity-20 text-xs"
+                        className="p-1 hover:bg-black hover:text-white rounded-none disabled:opacity-20 text-xs font-black border border-transparent hover:border-black"
                       >
                          ▲
                       </button>
@@ -122,7 +124,7 @@ export default function RankingMarket({
                         type="button"
                         disabled={index === internalOrder.length - 1}
                         onClick={() => moveItem(index, 'down')}
-                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded disabled:opacity-20 text-xs"
+                        className="p-1 hover:bg-black hover:text-white rounded-none disabled:opacity-20 text-xs font-black border border-transparent hover:border-black"
                       >
                          ▼
                       </button>

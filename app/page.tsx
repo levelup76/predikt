@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Calendar, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 
 export const revalidate = 60; // Revalidate every minute
@@ -15,69 +14,71 @@ export default async function Home() {
     .order("created_at", { ascending: false });
 
   return (
-    <div className="space-y-8">
-      <section className="text-center py-12">
-        <h1 className="text-4xl font-extrabold mb-4 tracking-tight">Tippelj. Oszd meg. Dicsekedj.</h1>
-        <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-          Ingyenes közösségi tippjáték az Oscar-tól a Bajnokok Ligájáig.
-          Hívd ki a barátaidat és mutasd meg, ki a nagyobb jós!
-        </p>
-      </section>
-
-      <section>
-        <h2 className="text-2xl font-bold mb-6">Aktív Események</h2>
+    <div className="max-w-7xl mx-auto px-4 font-mono">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-12">
         
-        {!events || events.length === 0 ? (
-           <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-             <p className="text-gray-500 mb-4">Jelenleg nincs aktív esemény.</p>
-             <Link href="/create" className="text-blue-600 hover:underline font-medium">
-               Hozz létre te egyet!
-             </Link>
-           </div>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-6">
-            {events.map((event) => {
-              // Quick theme color mapping for cover placeholder
-              const themeMap: Record<string, string> = {
-                modern: 'from-blue-500 to-purple-600',
-                elegant: 'from-yellow-600 to-gray-900',
-                retro: 'from-pink-500 to-indigo-500',
-                neon: 'from-green-400 to-blue-900',
-              };
-              const themeColor = themeMap[event.theme || 'modern'] || themeMap.modern;
-
-              return (
-                <Link
-                  key={event.id}
-                  href={`/e/${event.slug}`}
-                  className="block group bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow overflow-hidden"
-                >
-                  <div className={`h-40 bg-gradient-to-r ${themeColor}`}></div>
-                  <div className="p-6">
-                    <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      {new Date(event.lock_at).toLocaleDateString('hu-HU')}
-                      <span className="mx-2">•</span>
-                      <span className="uppercase text-xs font-semibold tracking-wider text-green-600 dark:text-green-400">
-                        Nyitva
-                      </span>
-                    </div>
-                    <h3 className="text-xl font-bold mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                      {event.title}
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-300 line-clamp-2">
-                      {event.description}
-                    </p>
-                    <div className="mt-4 flex items-center text-blue-600 dark:text-blue-400 font-medium">
-                      Tippelés indítása <ChevronRight className="w-4 h-4 ml-1" />
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+        {/* Sidebar / Hero Area */}
+        <div className="lg:col-span-4 lg:sticky lg:top-8 h-fit space-y-6">
+          <div className="bg-yellow-400 dark:bg-yellow-500 p-8 rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] border-2 border-black dark:border-white">
+            <h1 className="text-5xl font-black text-black mb-4 uppercase leading-none tracking-tighter">
+              Predikt
+            </h1>
+            <p className="text-black font-bold text-lg mb-6 leading-tight">
+              Te vagy a legnagyobb jós a világon!
+            </p>
+            <div className="space-y-2 text-sm font-bold">
+               <div className="bg-white text-black p-2 border-2 border-black flex items-center gap-2">
+                 <span className="text-red-500">✖</span> Nem fogadás
+               </div>
+               <div className="bg-white text-black p-2 border-2 border-black flex items-center gap-2">
+                 <span className="text-blue-500">✖</span> Nem lottó
+               </div>
+               <div className="bg-black text-white p-2 border-2 border-black flex items-center gap-2">
+                 <span className="text-green-400">✔</span> Csak dicsőség
+               </div>
+            </div>
           </div>
-        )}
-      </section>
+
+           <div className="bg-white dark:bg-gray-800 p-6 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+             <h3 className="font-bold text-lg uppercase mb-2">Hogyan?</h3>
+             <ul className="list-disc list-inside space-y-2 text-sm">
+               <li>Hozz létre eseményt</li>
+               <li>Hívd meg a spanokat</li>
+               <li>Tippeljetek</li>
+               <li>Röhögj a veszteseken</li>
+             </ul>
+           </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="lg:col-span-8">
+            <div className="bg-black text-white p-4 mb-8 border-2 border-black dark:border-white flex justify-between items-center transform -rotate-1">
+                <h2 className="text-2xl font-black uppercase">Aktív Események</h2>
+                <Link href="/create" className="bg-white text-black px-4 py-1 text-sm font-bold hover:bg-yellow-400 transition-colors uppercase">
+                    + Létrehozás
+                </Link>
+            </div>
+            
+            {!events || events.length === 0 ? (
+                <div className="p-12 text-center opacity-50 font-bold border-2 border-dashed border-gray-400">
+                    Nincs aktív esemény. Hozz létre te egyet!
+                </div>
+            ) : (
+                <div className="grid gap-4">
+                    {events.map((event) => (
+                        <Link key={event.id} href={`/e/${event.slug}`} className="block bg-white dark:bg-gray-800 border-2 border-black dark:border-white p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:translate-y-1 hover:shadow-none transition-all">
+                            <div className="flex justify-between items-start mb-2">
+                                    <span className="bg-black text-white text-xs px-2 py-1 font-bold uppercase">{event.category || 'Általános'}</span>
+                                    <span className="font-bold text-xs">{new Date(event.lock_at).toLocaleDateString('hu-HU')}</span>
+                            </div>
+                            <h3 className="text-2xl font-black uppercase mb-1">{event.title}</h3>
+                            <p className="font-medium text-gray-600 dark:text-gray-300 line-clamp-2">{event.description}</p>
+                        </Link>
+                    ))}
+                </div>
+            )}
+        </div>
+      </div>
     </div>
   );
 }

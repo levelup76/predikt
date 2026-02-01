@@ -7,36 +7,43 @@ export default function AboutPage() {
     <div className="container max-w-4xl py-12 px-4">
       <Link 
         href="/"
-        className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 mb-8 transition-colors"
+        className="inline-flex items-center text-sm font-bold uppercase text-black dark:text-white hover:underline mb-8 transition-colors"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
         Vissza a főoldalra
       </Link>
 
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 md:p-12 shadow-sm border border-gray-100 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-900 p-8 md:p-12 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] border-2 border-black dark:border-white">
         <div className="flex flex-col items-center mb-10 text-center">
              <div className="relative w-24 h-24 mb-6">
-                <Image src="/logo.png" alt="Predikt Logo" width={550} height={550} className="object-contain" />
+                <Image 
+                  src="/logo.png?v=2" 
+                  alt="Predikt Logo" 
+                  width={550} 
+                  height={550} 
+                  className="object-contain" 
+                  unoptimized
+                />
              </div>
-             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-2">
+             <h1 className="text-5xl md:text-6xl font-black text-black dark:text-white mb-2 uppercase tracking-tight">
                Predikt
              </h1>
-             <p className="text-lg text-gray-500 font-medium">Közösségi Tippjáték</p>
+             <p className="text-xl text-gray-500 font-bold uppercase tracking-widest bg-gray-100 dark:bg-gray-800 px-3 py-1">Közösségi Tippjáték</p>
         </div>
 
         {/* Development Warning */}
-        <div className="mb-10 p-5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-center">
-           <p className="text-amber-800 dark:text-amber-200 font-medium">
-             ⚠️ Az oldal jelenleg fejlesztés alatt áll.
+        <div className="mb-10 p-6 bg-yellow-400 border-2 border-black text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+           <p className="text-black font-black uppercase text-lg">
+             ⚠️ Az oldal jelenleg fejlesztés alatt áll ⚠️
            </p>
-           <p className="text-amber-700 dark:text-amber-300 text-sm mt-1">
-             Hibákkal, javaslatokkal keressenek a <a href="mailto:levelup@levelup.hu" className="underline font-bold hover:text-amber-900 dark:hover:text-amber-100">levelup@levelup.hu</a> címen!
+           <p className="text-black font-medium text-sm mt-2 border-t border-black pt-2 inline-block">
+             Hibákkal, javaslatokkal keressenek a <a href="mailto:levelup@levelup.hu" className="uppercase font-black hover:bg-black hover:text-white px-1">levelup@levelup.hu</a> címen!
            </p>
         </div>
 
-        <div className="space-y-8 text-lg text-gray-700 dark:text-gray-300">
-          <section>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+        <div className="space-y-10 text-lg text-black dark:text-white font-medium">
+          <section className="border-l-4 border-black dark:border-white pl-6">
+            <h2 className="text-2xl font-black uppercase text-black dark:text-white mb-3">
               Az Ötlet
             </h2>
             <p>
@@ -44,8 +51,8 @@ export default function AboutPage() {
             </p>
           </section>
 
-          <section>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+          <section className="border-l-4 border-black dark:border-white pl-6">
+            <h2 className="text-2xl font-black uppercase text-black dark:text-white mb-3">
               A Megvalósítás
             </h2>
             <p>

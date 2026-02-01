@@ -89,13 +89,13 @@ export default function BettingForm({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12">
       
-      {/* Progress Bar */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 sticky top-20 z-10 flex items-center justify-between">
+      {/* Progress Bar - Sticky */}
+      <div className="bg-white dark:bg-gray-900 p-4 border-b-4 border-black dark:border-white sticky top-0 z-30 flex items-center justify-between shadow-[0px_4px_0px_0px_rgba(0,0,0,0.1)] -mx-4 md:mx-0 md:border-2 md:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
          <div className="flex flex-col">
-            <span className="text-xs font-bold uppercase text-gray-500">Haladás</span>
-            <span className="text-lg font-bold text-blue-600">{answeredCount} / {totalCount} tipp</span>
+            <span className="text-xs font-black uppercase text-gray-500 tracking-widest">Haladás</span>
+            <span className="text-xl font-black text-black dark:text-white uppercase">{answeredCount} / {totalCount} tipp</span>
          </div>
          
          {!isLocked ? (
@@ -103,46 +103,47 @@ export default function BettingForm({
              onClick={handleSubmit} 
              disabled={!isComplete || isPending}
              className={clsx(
-               "px-6 py-2 rounded-full font-bold transition-all flex items-center",
+               "px-6 py-2 font-black uppercase text-sm border-2 transition-all flex items-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px]",
                isComplete 
-                 ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30" 
-                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                 ? "bg-black text-white border-black hover:bg-yellow-400 hover:text-black dark:bg-white dark:text-black dark:border-white" 
+                 : "bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed shadow-none"
              )}
            >
              {isPending && <Loader2 className="animate-spin mr-2 w-4 h-4" />}
              {userPrediction ? 'Frissítés' : 'Beküldés'}
            </button>
          ) : (
-           <div className="flex items-center text-red-500 font-bold bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-full">
+           <div className="flex items-center text-white font-black uppercase bg-red-500 border-2 border-black px-4 py-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
              <Lock className="w-4 h-4 mr-2" /> Lezárva
            </div>
          )}
       </div>
 
       {/* Markets List */}
-      <div className="space-y-6">
+      <div className="space-y-12">
         {markets.map((market, index) => (
-          <div key={market.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex gap-3">
-              <span className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold text-sm">
-                {index + 1}
-              </span>
-              <h3 className="text-lg font-semibold pt-0.5">{market.question}</h3>
+          <div key={market.id} className="bg-white dark:bg-gray-900 border-2 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] relative">
+            <div className="absolute -top-5 left-4 bg-yellow-400 border-2 border-black px-3 py-1 font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] z-10">
+                #{index + 1} KÉRDÉS
+            </div>
+
+            <div className="p-8 pt-10 border-b-2 border-dashed border-black dark:border-white bg-gray-50 dark:bg-gray-900/50">
+              <h3 className="text-2xl font-black uppercase leading-tight">{market.question}</h3>
             </div>
             
-            <div className="p-4">
+            <div className="p-6">
                {market.type === 'score' ? (
-                 <div className="grid gap-4 sm:grid-cols-2">
+                 <div className="grid gap-6 sm:grid-cols-2">
                     {market.options_json.map((option) => {
                        // picks[market.id] is an object like { optionId: "3" }
                        const val = picks[market.id]?.[option.id] || ''
                        
                        return (
-                         <div key={option.id} className="flex items-center justify-between p-3 border rounded-lg dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                         <div key={option.id} className="flex items-center justify-between p-4 border-2 border-black dark:border-white bg-white dark:bg-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.5)]">
                             <div className="flex flex-col">
-                                <span className="font-medium pr-4">{option.label}</span>
+                                <span className="font-bold uppercase text-sm">{option.label}</span>
                                 {!!results && results[market.id] && (
-                                   <span className="text-xs text-gray-500 mt-1">Eredmény: <strong className="text-green-600">{results[market.id]?.[option.id]}</strong></span>
+                                   <span className="text-xs text-black bg-green-400 inline-block px-1 border border-black mt-1 font-bold uppercase">Eredmény: {results[market.id]?.[option.id]}</span>
                                 )}
                             </div>
                             <input 
@@ -151,10 +152,10 @@ export default function BettingForm({
                                value={val}
                                onChange={(e) => handleScoreChange(market.id, option.id, e.target.value)}
                                className={clsx(
-                                   "w-20 p-2 text-center text-lg font-bold border rounded-md dark:bg-gray-800 dark:border-gray-600 outline-none",
+                                   "w-24 p-2 text-center text-xl font-black border-2 border-black rounded-none outline-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all",
                                    !!results && results[market.id] && String(val) === String(results[market.id]?.[option.id]) 
-                                     ? "bg-green-100 border-green-500 text-green-700 ring-2 ring-green-500" 
-                                     : "focus:ring-2 focus:ring-blue-500"
+                                     ? "bg-green-400 text-black" 
+                                     : "bg-gray-100 focus:bg-white"
                                )}
                                placeholder="-"
                             />
@@ -163,8 +164,8 @@ export default function BettingForm({
                     })}
                  </div>
                ) : market.type === 'ranking' ? (
-                  <div className="p-2">
-                     <p className="text-sm text-gray-500 mb-3 italic">Húzd a versenyzőket a helyes sorrendbe!</p>
+                  <div className="p-4 border-2 border-dashed border-black">
+                     <p className="text-xs font-bold uppercase text-gray-500 mb-4 bg-gray-200 inline-block px-2">Húzd a versenyzőket a helyes sorrendbe!</p>
                      <RankingMarket 
                         market={market}
                         value={picks[market.id] as string[] | undefined}
@@ -173,7 +174,7 @@ export default function BettingForm({
                      />
                   </div>
                ) : (
-                 <div className="grid gap-3 sm:grid-cols-2">
+                 <div className="grid gap-4 sm:grid-cols-2">
                   {market.options_json.map((option) => {
                     const isSelected = picks[market.id] === option.id
                     
@@ -185,23 +186,30 @@ export default function BettingForm({
                     const isCorrect = results?.[market.id] === option.id
                     const isRevealed = !!results
                     
-                    let borderColor = "border-gray-200 dark:border-gray-700"
-                    let textColor = "text-gray-900 dark:text-gray-100"
+                    let borderColor = "border-black dark:border-white"
+                    let bgColor = "bg-white dark:bg-black"
+                    let textColor = "text-black dark:text-white"
+                    let shadow = "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
                     
                     if (isSelected) {
-                        borderColor = "border-blue-600 bg-blue-50 dark:bg-blue-900/30 shadow-sm"
-                        textColor = "text-blue-700 dark:text-blue-300"
+                        bgColor = "bg-black dark:bg-white"
+                        textColor = "text-white dark:text-black"
                     }
                     
                     if (isRevealed) {
                         if (isCorrect) {
-                            borderColor = "border-green-500 bg-green-50 dark:bg-green-900/20 ring-2 ring-green-500"
-                            textColor = "text-green-800 dark:text-green-200"
+                            borderColor = "border-black"
+                            bgColor = "bg-green-500"
+                            textColor = "text-black"
+                            shadow = "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                         } else if (isSelected && !isCorrect) {
-                            borderColor = "border-red-300 bg-red-50 dark:bg-red-900/20 opacity-70"
-                            textColor = "text-red-800 dark:text-red-200"
+                            borderColor = "border-red-500"
+                            bgColor = "bg-red-500"
+                            textColor = "text-white"
                         } else {
-                            borderColor = "border-gray-200 dark:border-gray-700 opacity-50"
+                            borderColor = "border-gray-200" 
+                            bgColor = "opacity-50"
+                            shadow = "shadow-none"
                         }
                     }
 
@@ -211,32 +219,38 @@ export default function BettingForm({
                         onClick={() => handleSelect(market.id, option.id)}
                         disabled={isLocked}
                         className={clsx(
-                          "p-4 rounded-lg border-2 text-left transition-all relative overflow-hidden",
+                          "p-4 border-2 text-left transition-all relative overflow-hidden group min-h-[80px] flex flex-col justify-center",
                           borderColor,
+                          bgColor,
                           textColor,
-                          !isLocked && !isRevealed && "hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                          shadow,
+                          !isLocked && !isRevealed && "hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
                         )}
                       >
                          {/* Progress Bar Background for Stats */}
                          {stats && (
                              <div 
-                                className={clsx("absolute left-0 top-0 bottom-0 transition-all opacity-10", isCorrect ? "bg-green-500" : "bg-blue-500")} 
+                                className={clsx("absolute left-0 top-0 bottom-0 transition-all opacity-20 mix-blend-multiply dark:mix-blend-overlay", isCorrect ? "bg-white" : "bg-black dark:bg-white")} 
                                 style={{ width: `${votePercent}%` }} 
                              />
                          )}
 
-                        <span className="font-medium relative z-10">{option.label}</span>
-                        {isSelected && !isRevealed && (
-                          <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-600 z-10" />
-                        )}
-                        {isRevealed && isCorrect && (
-                          <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600 z-10" />
-                        )}
+                        <div className="relative z-10 flex items-center justify-between w-full">
+                            <span className="font-bold uppercase tracking-wide text-sm pr-6">{option.label}</span>
+                            
+                            {/* Icons for selection/result */}
+                            {isSelected && !isRevealed && (
+                              <CheckCircle className="w-6 h-6 shrink-0" />
+                            )}
+                            {isRevealed && isCorrect && (
+                              <CheckCircle className="w-6 h-6 shrink-0 text-black" />
+                            )}
+                        </div>
 
                         {/* Stats Text */}
                          {stats && (
-                             <div className="relative z-10 mt-1 min-h-[1.2rem] flex items-center">
-                                 <div className="text-xs font-bold opacity-70">
+                             <div className="relative z-10 mt-2 border-t border-current pt-1 opacity-80">
+                                 <div className="text-xs font-mono font-bold">
                                      {votePercent}% ({voteCount} szavazat)
                                  </div>
                              </div>

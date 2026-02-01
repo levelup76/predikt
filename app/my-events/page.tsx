@@ -31,10 +31,10 @@ export default async function MyEventsPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-extrabold tracking-tight">Általam Szervezett Események</h1>
+        <h1 className="text-4xl font-black uppercase tracking-tight border-b-4 border-black dark:border-white pb-2">Általam Szervezett</h1>
         <Link 
            href="/create"
-           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold flex items-center shadow-lg transition-transform hover:-translate-y-0.5"
+           className="bg-yellow-400 text-black px-6 py-3 border-2 border-black font-black uppercase flex items-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all rounded-none"
         >
             <Plus className="w-5 h-5 mr-2" />
             Új Esemény
@@ -42,29 +42,29 @@ export default async function MyEventsPage() {
       </div>
 
       {!events || events.length === 0 ? (
-        <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
-          <div className="bg-blue-50 dark:bg-blue-900/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-               <TrendingUp className="w-8 h-8 text-blue-500" />
+        <div className="text-center py-20 bg-white dark:bg-gray-900 border-2 border-dashed border-black dark:border-white">
+          <div className="bg-yellow-100 dark:bg-yellow-900/30 w-20 h-20 border-2 border-black dark:border-white flex items-center justify-center mx-auto mb-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+               <TrendingUp className="w-10 h-10 text-black dark:text-white" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Még nem hoztál létre eseményt</h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+          <h3 className="text-2xl font-black text-black dark:text-white mb-2 uppercase">Még nem hoztál létre eseményt</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto font-medium">
             Indítsd el a saját tippjátékodat! Hívd meg a barátaidat és derüljön ki, ki a legjobb jós.
           </p>
           <Link 
             href="/create" 
-            className="inline-flex items-center justify-center px-8 py-3 rounded-full text-base font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-blue-500/30 shadow-lg"
+            className="inline-flex items-center justify-center px-8 py-4 text-lg font-black uppercase text-white bg-black dark:bg-white dark:text-black border-2 border-black dark:border-white hover:bg-yellow-400 hover:text-black transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:-translate-y-1 rounded-none"
           >
             Létrehozás Most
           </Link>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-6">
           {events.map((event) => {
              const statusColorMap: Record<string, string> = {
-              open: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-              locked: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-              revealed: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', 
-              draft: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+              open: 'bg-green-400 text-black border-black',
+              locked: 'bg-orange-400 text-black border-black',
+              revealed: 'bg-blue-400 text-black border-black', 
+              draft: 'bg-gray-200 text-gray-500 border-gray-400'
             };
             const statusColors = statusColorMap[event.status || 'draft'] || 'bg-gray-100';
 
@@ -82,38 +82,38 @@ export default async function MyEventsPage() {
             return (
               <div 
                 key={event.id} 
-                className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group hover:border-blue-300 dark:hover:border-blue-800 transition-colors"
+                className="bg-white dark:bg-gray-900 p-6 border-2 border-black dark:border-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all rounded-none"
               >
                  <div className="flex-grow">
-                    <div className="flex items-center gap-3 mb-1">
-                        <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide ${statusColors}`}>
+                    <div className="flex items-center gap-3 mb-2">
+                        <span className={`px-2 py-0.5 border-2 text-xs font-black uppercase tracking-wide ${statusColors}`}>
                             {statusLabel}
                         </span>
-                        <div className="flex items-center text-xs text-gray-500 font-medium">
+                        <div className="flex items-center text-xs text-gray-500 font-bold uppercase">
                             <Calendar className="w-3 h-3 mr-1" />
                             {new Date(event.created_at).toLocaleDateString('hu-HU')}
                         </div>
                     </div>
-                    <Link href={`/e/${event.slug}`} className="text-xl font-bold hover:text-blue-600 transition-colors">
+                    <Link href={`/e/${event.slug}`} className="text-2xl font-black uppercase hover:underline decoration-4 decoration-yellow-400 underline-offset-4 transition-all">
                         {event.title}
                     </Link>
-                    <div className="text-sm text-gray-500 mt-1">
+                    <div className="text-sm font-bold text-gray-500 mt-1 uppercase">
                         {predictionCount} tippelő eddig
                     </div>
                  </div>
 
-                 <div className="flex items-center gap-3 w-full sm:w-auto">
+                 <div className="flex items-center gap-4 w-full sm:w-auto">
                     <Link 
                         href={`/e/${event.slug}`}
-                        className="flex-1 sm:flex-none py-2 px-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium text-center transition-colors"
+                        className="flex-1 sm:flex-none py-3 px-5 border-2 border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black text-sm font-bold uppercase text-center transition-all rounded-none"
                     >
                         Megtekintés
                     </Link>
                     <Link 
                         href={`/e/${event.slug}/admin`}
-                        className="flex-1 sm:flex-none py-2 px-4 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 font-bold text-sm flex items-center justify-center shadow-lg transition-transform hover:-translate-y-0.5"
+                        className="flex-1 sm:flex-none py-3 px-5 bg-black dark:bg-white text-white dark:text-black border-2 border-black dark:border-white hover:bg-yellow-400 hover:text-black font-black uppercase text-sm flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(100,100,100,0.5)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-1 rounded-none"
                     >
-                        <Settings className="w-3.5 h-3.5 mr-2" />
+                        <Settings className="w-4 h-4 mr-2" />
                         Kezelés
                     </Link>
                  </div>

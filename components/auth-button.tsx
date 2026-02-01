@@ -27,13 +27,13 @@ export default function AuthButton({ user }: { user: User | null }) {
 
   return user ? (
     <div className="flex items-center gap-2">
-      <span className="text-sm hidden sm:inline">{user.email}</span>
-      <button onClick={handleLogout} className="text-sm bg-gray-200 dark:bg-gray-800 px-3 py-1 rounded hover:opacity-80 transition-opacity">
+      <span className="text-xs font-bold uppercase hidden sm:inline bg-gray-100 dark:bg-gray-800 px-2 py-1 border border-gray-300 dark:border-gray-600">{user.email}</span>
+      <button onClick={handleLogout} className="text-sm font-bold uppercase border-2 border-black dark:border-white px-3 py-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all">
         Kilépés
       </button>
     </div>
   ) : (
-    <button onClick={handleLogin} className="text-sm bg-black dark:bg-white text-white dark:text-black px-3 py-1 rounded hover:opacity-80 transition-opacity">
+    <button onClick={handleLogin} className="text-sm font-bold uppercase bg-black text-white border-2 border-black px-4 py-1.5 shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:translate-y-0.5 hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] transition-all dark:bg-white dark:text-black dark:border-white">
       Google Belépés
     </button>
   )

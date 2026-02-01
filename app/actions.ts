@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { EventDetailsForm, slugify } from '@/lib/schemas'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
@@ -8,6 +9,43 @@ import { revalidatePath } from 'next/cache'
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
+
+// --- EVENT LIFECYCLE ACTIONS ---
+
+// Delete Event (Creator Only)
+export async function deleteEventAction(eventId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: 'Jelentkezz be!' }
+
+    // Check ownership
+    const { data: event, error: fetchError } = await supabase
+        .from('events')
+        .select('creator_id')
+        .eq('id', eventId)
+        .single()
+
+    if (fetchError || !event) {
+        return { error: 'Esemény nem található.' }
+    }
+
+    if (event.creator_id !== user.id) {
+        return { error: 'Nincs jogosultságod törölni ezt az eseményt.' }
+    }
+
+    // Perform delete
+    const { error: deleteError } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', eventId)
+
+    if (deleteError) {
+        return { error: 'Törlés sikertelen: ' + deleteError.message }
+    }
+
+    return { success: true }
+}
 
 export async function createEventDraftAction(data: EventDetailsForm) {
   const supabase = await createClient()
@@ -250,9 +288,22 @@ export async function deleteEventAdminAction(formData: FormData) {
         return { error: 'Unauthorized' }
     }
     
-    // Delete event (cascade should handle related predictions/markets if setup, but let's be safe)
-    // Deleting event triggers cascade usually.
-    const { error } = await supabase.from('events').delete().eq('id', eventId)
+    // Use Admin Client to bypass RLS policies
+    let adminClient;
+    try {
+        adminClient = createAdminClient()
+    } catch (e) {
+        console.error('Admin Client Error:', e)
+        return { error: 'Szerver konfigurációs hiba: Hiányzó Service Role Key' }
+    }
+
+    // 1. Manually Cascade Delete Reports
+    await adminClient.from('reports').delete().eq('event_id', eventId)
+    
+    // 2. Delete Event
+    // This should cascade to markets and predictions if schema is correct
+    // Using adminClient ensures we have permission to delete any event
+    const { error } = await adminClient.from('events').delete().eq('id', eventId)
     
     if (error) {
         console.error('Delete failed:', error)

@@ -2,6 +2,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { deleteEventAdminAction, toggleUserBanAction } from "../actions";
+import { DeleteEventButton } from "@/components/admin/delete-event-button";
 
 export default async function SuperAdminPage() {
     const supabase = await createClient();
@@ -15,7 +16,7 @@ export default async function SuperAdminPage() {
     }
 
     // Check if user is super admin
-    const ADMIN_EMAILS = ["levelup.production@gmail.com", "levelup@levelup.hu"];
+    const ADMIN_EMAILS = ["levelup.production@gmail.com"];
     if (!user.email || !ADMIN_EMAILS.includes(user.email)) {
         return redirect("/");
     }
@@ -149,18 +150,7 @@ export default async function SuperAdminPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex gap-2">
-                                                <form action={async (formData) => {
-                                                    "use server"
-                                                    await deleteEventAdminAction(formData)
-                                                }}>
-                                                    <input type="hidden" name="id" value={event.id} />
-                                                    <button 
-                                                        type="submit"
-                                                        className="font-medium text-red-600 dark:text-red-500 hover:underline"
-                                                    >
-                                                        Törlés
-                                                    </button>
-                                                </form>
+                                                <DeleteEventButton eventId={event.id} />
                                                 {creator && (
                                                     <form action={async (formData) => {
                                                         "use server"

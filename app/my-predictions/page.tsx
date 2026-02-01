@@ -41,28 +41,28 @@ export default async function MyPredictions() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-extrabold tracking-tight">Tippjeim</h1>
-        <div className="text-sm text-gray-500">
+        <h1 className="text-4xl font-black uppercase tracking-tight border-b-4 border-black dark:border-white pb-2">Tippjeim</h1>
+        <div className="text-sm font-bold uppercase text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 border-2 border-dashed border-gray-400">
           {predictions?.length || 0} eseményen tippeltél
         </div>
       </div>
 
       {!predictions || predictions.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
-          <Trophy className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Még nincsenek tippjeid</h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+        <div className="text-center py-16 bg-white dark:bg-gray-900 border-2 border-dashed border-black dark:border-white">
+          <Trophy className="w-16 h-16 mx-auto text-black dark:text-white mb-6 border-2 border-black dark:border-white p-2 bg-yellow-400 rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]" />
+          <h3 className="text-2xl font-black uppercase text-black dark:text-white mb-2">Még nincsenek tippjeid</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-sm mx-auto font-medium">
             Válassz egy izgalmas eseményt a főoldalról és tedd meg az első tippedet!
           </p>
           <Link 
             href="/" 
-            className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center justify-center px-8 py-4 border-2 border-black dark:border-white text-lg font-black uppercase text-white bg-black dark:bg-white dark:text-black hover:bg-yellow-400 hover:text-black hover:border-black transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:-translate-y-1 rounded-none"
           >
             Események böngészése
           </Link>
         </div>
       ) : (
-        <div className="grid gap-6">
+        <div className="grid gap-8">
           {predictions.map((prediction) => {
             const eventData = prediction.events;
             // @ts-ignore
@@ -81,19 +81,21 @@ export default async function MyPredictions() {
             
             const isFullyAnswered = answeredCount === totalMarkets && totalMarkets > 0;
             
+            // Theme map updated to Fresh border colors logic if needed, but we rely on global neo-brutalist style heavily now.
+            // Keeping subtle variation for "theme" hint could be cool.
             const themeMap: Record<string, string> = {
-              modern: 'border-blue-500',
-              elegant: 'border-yellow-600',
-              retro: 'border-pink-500', 
-              neon: 'border-green-400',
+              modern: 'bg-blue-100',
+              elegant: 'bg-yellow-100',
+              retro: 'bg-pink-100', 
+              neon: 'bg-green-100',
             };
-            const themeColor = themeMap[event.theme || 'modern'] || themeMap.modern;
+            const themeBg = themeMap[event.theme || 'modern'] || 'bg-gray-100';
 
             const statusColorMap: Record<string, string> = {
-              open: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-              locked: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-              revealed: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', 
-              draft: 'bg-gray-100 text-gray-800'
+              open: 'bg-green-400 text-black border-black',
+              locked: 'bg-orange-400 text-black border-black',
+              revealed: 'bg-blue-400 text-black border-black', 
+              draft: 'bg-gray-200 text-gray-400 border-gray-400'
             };
             const statusColors = statusColorMap[event.status || 'draft'] || 'bg-gray-100 text-gray-800';
 
@@ -108,38 +110,38 @@ export default async function MyPredictions() {
             return (
               <div 
                 key={prediction.id} 
-                className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 ${themeColor} border-y border-r border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-all`}
+                className={`bg-white dark:bg-gray-900 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all`}
               >
                 <div className="p-6">
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 mb-8">
                     <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide uppercase ${statusColors}`}>
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className={`px-2 py-0.5 border-2 text-xs font-black uppercase tracking-wide ${statusColors}`}>
                           {statusLabel}
                         </span>
-                        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center text-xs font-bold uppercase text-gray-500 dark:text-gray-400">
                           <Calendar className="w-4 h-4 mr-1.5" />
                           <span>Eredményhirdetés: {event.lock_at ? new Date(event.lock_at).toLocaleDateString('hu-HU') : 'TBD'}</span>
                         </div>
                       </div>
                       <Link href={`/e/${event.slug}`} className="group">
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        <h2 className="text-3xl font-black uppercase text-black dark:text-white hover:underline decoration-4 decoration-yellow-400 underline-offset-4 transition-all">
                           {event.title}
                         </h2>
                       </Link>
                     </div>
                     
-                    <div className="flex items-center gap-4 bg-gray-50 dark:bg-gray-800/50 px-4 py-2 rounded-lg border border-gray-100 dark:border-gray-700/50">
+                    <div className="flex items-center gap-6 border-2 border-dashed border-black dark:border-white px-6 py-3 bg-gray-50 dark:bg-gray-900/50">
                         <div className="text-center">
-                            <span className="block text-xs uppercase text-gray-500 font-semibold tracking-wider">Tippek</span>
-                            <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                                {answeredCount} <span className="text-gray-400 text-sm font-normal">/ {totalMarkets}</span>
+                            <span className="block text-xs uppercase font-black tracking-widest mb-1">Tippek</span>
+                            <span className="text-2xl font-black text-black dark:text-white">
+                                {answeredCount} <span className="text-gray-400 text-lg font-bold">/ {totalMarkets}</span>
                             </span>
                         </div>
                         {event.status === 'revealed' && (
-                             <div className="pl-4 border-l border-gray-200 dark:border-gray-700 text-center">
-                                <span className="block text-xs uppercase text-gray-500 font-semibold tracking-wider">Pontszám</span>
-                                <span className="text-xl font-bold text-green-600 dark:text-green-400">
+                             <div className="pl-6 border-l-2 border-black dark:border-white text-center">
+                                <span className="block text-xs uppercase font-black tracking-widest mb-1">Pontszám</span>
+                                <span className="text-2xl font-black text-black dark:text-white bg-green-400 px-2">
                                     {prediction.points || 0}
                                 </span>
                             </div>
@@ -148,43 +150,43 @@ export default async function MyPredictions() {
                   </div>
 
                   {/* Quick View of Picks */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-gray-200 flex items-center">
-                        <CheckCircle2 className="w-4 h-4 mr-2 text-blue-500" />
-                        Legutóbbi tippjeid:
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-black uppercase flex items-center border-b-2 border-black dark:border-white pb-2 inline-block">
+                        <CheckCircle2 className="w-4 h-4 mr-2" />
+                        Legutóbbi tippjeid
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {markets.slice(0, 4).map((market: any) => { // Show first 4
                             const pickedOptionId = picks[market.id];
                             const pickedOption = market.options_json?.find((o: any) => o.id === pickedOptionId);
                             
                             return (
-                                <div key={market.id} className="text-sm flex items-center justify-between bg-gray-50 dark:bg-gray-900/50 p-3 rounded border border-gray-100 dark:border-gray-800">
-                                    <span className="text-gray-500 dark:text-gray-400 truncate max-w-[60%] block" title={market.question}>
+                                <div key={market.id} className="text-sm flex items-center justify-between bg-white dark:bg-black p-3 border-2 border-black dark:border-white">
+                                    <span className="font-bold uppercase truncate max-w-[60%] block pr-2" title={market.question}>
                                         {market.question}
                                     </span>
-                                    <span className={`font-medium truncate max-w-[35%] block ${pickedOption ? 'text-gray-900 dark:text-gray-200' : 'text-gray-400 italic'}`}>
-                                        {pickedOption ? pickedOption.label : '–'}
+                                    <span className={`font-mono text-xs px-2 py-1 ${pickedOption ? 'bg-black text-white dark:bg-white dark:text-black font-bold' : 'text-gray-400 italic border border-dashed border-gray-400'}`}>
+                                        {pickedOption ? pickedOption.label : 'Nincs tipp'}
                                     </span>
                                 </div>
                             )
                         })}
                         {markets.length > 4 && (
-                            <Link href={`/e/${event.slug}`} className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center justify-center bg-blue-50 dark:bg-blue-900/10 p-3 rounded border border-blue-100 dark:border-blue-900/20">
-                                +{markets.length - 4} további kérdés megtekintése
+                            <Link href={`/e/${event.slug}`} className="text-xs font-black uppercase text-center flex items-center justify-center bg-gray-100 dark:bg-gray-800 p-3 border-2 border-dashed border-black dark:border-white hover:bg-yellow-400 hover:text-black hover:border-black transition-colors">
+                                +{markets.length - 4} kérdés...
                             </Link>
                         )}
                     </div>
                   </div>
 
                   {event.status === 'open' && (
-                      <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+                      <div className="mt-8 pt-4 border-t-2 border-black dark:border-white flex justify-end">
                           <Link 
                             href={`/e/${event.slug}`}
-                            className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center"
+                            className="px-6 py-3 bg-black text-white dark:bg-white dark:text-black font-bold uppercase text-sm hover:bg-yellow-400 hover:text-black transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.5)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] flex items-center"
                           >
                               {isFullyAnswered ? 'Tippek módosítása' : 'Tippek folytatása'} 
-                              <Clock className="w-4 h-4 ml-1.5" />
+                              <Clock className="w-4 h-4 ml-2" />
                           </Link>
                       </div>
                   )}

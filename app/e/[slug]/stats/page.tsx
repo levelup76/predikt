@@ -102,47 +102,49 @@ export default async function EventStatsPage({
   });
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
-      <div className="mb-6">
+    <div className="max-w-4xl mx-auto py-8 px-4 font-mono">
+      <div className="mb-8">
         <Link
           href={`/e/${slug}`}
-          className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 dark:hover:text-gray-300 transition-colors"
+          className="inline-flex items-center text-sm font-bold uppercase text-gray-500 hover:text-black dark:hover:text-white transition-colors border-b-2 border-transparent hover:border-black dark:hover:border-white"
         >
           <ChevronLeft className="w-4 h-4 mr-1" />
           Vissza az eseményhez
         </Link>
       </div>
 
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-            <BarChart3 className="w-8 h-8 text-blue-600" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <h1 className="text-4xl font-black uppercase flex items-center gap-3">
+            <BarChart3 className="w-8 h-8 text-black dark:text-white" />
             Statisztikák
         </h1>
-        <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
+        <div className="flex items-center gap-2 text-sm font-bold uppercase bg-yellow-400 text-black px-4 py-2 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             <Users className="w-4 h-4" />
             <span>{validPredictions.length} tippelő</span>
         </div>
       </div>
 
       {/* Aggregate Stats */}
-      <div className="space-y-8 mb-12">
+      <div className="space-y-8 mb-16">
           {stats.map((market: any) => (
-              <div key={market.id} className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                  <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-gray-100">{market.question}</h3>
+              <div key={market.id} className="bg-white dark:bg-black p-6 border-2 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)]">
+                  <h3 className="font-black uppercase text-xl mb-6 text-black dark:text-white border-b-2 border-black dark:border-white pb-2 inline-block">
+                      {market.question}
+                  </h3>
                   
                   {market.distributions.length === 0 ? (
-                      <p className="text-gray-400 italic text-sm">Még nem érkezett tipp.</p>
+                      <p className="text-gray-500 font-bold uppercase text-sm border-2 border-dashed border-gray-400 p-4">Még nem érkezett tipp.</p>
                   ) : (
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                           {market.distributions.map((dist: any) => (
                               <div key={dist.label}>
-                                  <div className="flex justify-between text-sm mb-1">
-                                      <span className="font-medium text-gray-700 dark:text-gray-300">{dist.label}</span>
-                                      <span className="text-gray-500">{dist.count} szavazat ({dist.percentage}%)</span>
+                                  <div className="flex justify-between text-sm font-bold uppercase mb-2">
+                                      <span className="text-black dark:text-white">{dist.label}</span>
+                                      <span className="text-gray-600 dark:text-gray-400">{dist.count} szavazat ({dist.percentage}%)</span>
                                   </div>
-                                  <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                                  <div className="w-full bg-gray-100 dark:bg-gray-800 h-4 border-2 border-black dark:border-white p-[2px]">
                                       <div 
-                                        className="bg-blue-600 h-2.5 rounded-full" 
+                                        className="bg-black dark:bg-white h-full" 
                                         style={{ width: `${dist.percentage}%` }}
                                       ></div>
                                   </div>
@@ -156,54 +158,54 @@ export default async function EventStatsPage({
 
       {/* Individual Votes Table */}
       <section>
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <Users className="w-6 h-6" />
+          <h2 className="text-3xl font-black uppercase mb-8 flex items-center gap-3">
+              <Users className="w-8 h-8" />
               Leadott Tippek
           </h2>
 
           {!isRevealed ? (
-               <div className="p-8 text-center bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
-                  <Lock className="w-10 h-10 mx-auto text-blue-400 mb-3" />
-                  <h3 className="text-lg font-bold text-blue-900 dark:text-blue-300">A tippek még rejtve vannak</h3>
-                  <p className="text-blue-700 dark:text-blue-400 max-w-md mx-auto">
+               <div className="p-12 text-center bg-gray-50 dark:bg-gray-900 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+                  <Lock className="w-12 h-12 mx-auto text-black dark:text-white mb-4" />
+                  <h3 className="text-xl font-black uppercase text-black dark:text-white mb-2">A tippek még rejtve vannak</h3>
+                  <p className="text-gray-600 dark:text-gray-300 font-medium max-w-md mx-auto">
                       Az egyéni tippek listája akkor válik nyilvánossá, amikor az esemény lezárul. 
                       Addig csak a fenti összesített statisztikák láthatók.
                   </p>
                </div>
           ) : (
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+              <div className="bg-white dark:bg-black border-2 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)]">
                   <div className="overflow-x-auto">
                       <table className="w-full text-sm text-left">
-                          <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-900/50 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                          <thead className="text-xs text-black dark:text-white uppercase bg-yellow-400 border-b-2 border-black dark:border-white">
                               <tr>
-                                  <th className="px-6 py-3 font-bold">Játékos</th>
-                                  <th className="px-6 py-3 font-bold text-center">Pontszám</th>
-                                  <th className="px-6 py-3 text-right">Beküldve</th>
+                                  <th className="px-6 py-4 font-black">Játékos</th>
+                                  <th className="px-6 py-4 font-black text-center border-l-2 border-black dark:border-white">Pontszám</th>
+                                  <th className="px-6 py-4 font-black text-right border-l-2 border-black dark:border-white hidden sm:table-cell">Beküldve</th>
                               </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                          <tbody className="divide-y-2 divide-black dark:divide-white">
                              {validPredictions
                                 .sort((a,b) => (b.points || 0) - (a.points || 0))
                                 .map((pred: any) => (
-                                 <tr key={pred.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                     <td className="px-6 py-4 font-medium text-gray-900 dark:text-white flex items-center gap-3">
-                                         <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center font-bold text-blue-700 dark:text-blue-300 uppercase">
+                                 <tr key={pred.id} className="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+                                     <td className="px-6 py-4 font-bold text-black dark:text-white flex items-center gap-3">
+                                         <div className="w-10 h-10 border-2 border-black dark:border-white bg-white dark:bg-black flex items-center justify-center font-black text-black dark:text-white uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
                                              {pred.profile?.full_name?.[0] || pred.profile?.username?.[0] || '?'}
                                          </div>
-                                         <span>
+                                         <span className="uppercase tracking-tight">
                                             {pred.profile?.full_name || pred.profile?.username || 'Ismeretlen'}
                                          </span>
                                      </td>
-                                     <td className="px-6 py-4 text-center">
+                                     <td className="px-6 py-4 text-center border-l-2 border-black dark:border-white">
                                          {event.status === 'revealed' ? (
-                                             <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                                 {pred.points || 0} pont
+                                             <span className="inline-block px-3 py-1 font-black bg-black text-white dark:bg-white dark:text-black uppercase">
+                                                 {pred.points || 0} PTS
                                              </span>
                                          ) : (
-                                             <span className="text-gray-400">-</span>
+                                             <span className="text-gray-400 font-black">-</span>
                                          )}
                                      </td>
-                                     <td className="px-6 py-4 text-right text-gray-500">
+                                     <td className="px-6 py-4 text-right font-medium text-gray-600 dark:text-gray-400 border-l-2 border-black dark:border-white hidden sm:table-cell">
                                          {new Date(pred.submitted_at || Date.now()).toLocaleDateString('hu-HU')}
                                      </td>
                                  </tr>
