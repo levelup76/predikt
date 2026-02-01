@@ -1,0 +1,349 @@
+'use client'
+
+import { useState } from 'react'
+import { X, Download, Heart, Copy, Check } from 'lucide-react'
+
+interface SharePicksModalProps {
+  isOpen: boolean
+  onClose: () => void
+  eventTitle: string
+  eventSlug: string
+  picks: Record<string, any>
+  favorites: Record<string, any>
+  markets: any[]
+  userName?: string
+}
+
+// Standard hex colors to avoid html2canvas issues with Tailwind v4 'lab' colors
+const COLORS = {
+  white: '#ffffff',
+  black: '#000000',
+  yellow400: '#FACC15',
+  gray500: '#6B7280',
+  gray200: '#E5E7EB',
+}
+
+export default function SharePicksModal({
+  isOpen,
+  onClose,
+  eventTitle,
+  eventSlug,
+  picks,
+  favorites,
+  markets,
+  userName
+}: SharePicksModalProps) {
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [isCopied, setIsCopied] = useState(false)
+
+  if (!isOpen) return null
+
+  // Filter only answered markets
+  const answeredMarkets = markets.filter(m => picks[m.id])
+
+  const handleDownload = async () => {
+    setIsGenerating(true)
+
+    try {
+        const blob = await generateTicketBlob();
+        if (!blob) return;
+        
+        // Share / Download logic
+        const file = new File([blob], `predikt-${eventSlug}-picks.png`, { type: 'image/png' });
+        
+        let shared = false;
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+             try {
+                 await navigator.share({
+                     files: [file],
+                     title: 'Predikt Tippjeim',
+                     text: `Itt vannak a tippjeim a(z) ${eventTitle} eseményre!`,
+                 })
+                 shared = true;
+             } catch (e) {
+                 console.warn('Share API cancelled/failed', e)
+             }
+        }
+
+        if (!shared) {
+             const url = window.URL.createObjectURL(blob);
+             const link = document.createElement('a')
+             link.href = url
+             link.download = `predikt-${eventSlug}-picks.png`
+             document.body.appendChild(link)
+             link.click()
+             document.body.removeChild(link)
+             window.URL.revokeObjectURL(url);
+        }
+
+    } catch (err) {
+      console.error('Hiba a kép generálásakor:', err)
+      alert('Nem sikerült a képet létrehozni. Kérlek próbáld újra később!')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleCopy = async () => {
+    setIsGenerating(true)
+    try {
+        // Reuse generation logic (refactor later if needed)
+        // ... (Duplicate generation logic for now to ensure safety or refactor to single function)
+        // Ideally we split generateBlob out.
+        // For minimal diff, I will create a helper or just inline generation here too or make handleDownload mostly generic.
+        
+        // Let's refactor generation to a helper inside the component
+        const blob = await generateTicketBlob();
+        if (!blob) return;
+
+        await navigator.clipboard.write([
+            new ClipboardItem({
+                [blob.type]: blob
+            })
+        ]);
+        
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 3000);
+    } catch (err) {
+        console.error('Copy failed', err);
+        alert('Nem sikerült a vágólapra másolni.');
+    } finally {
+        setIsGenerating(false);
+    }
+  }
+
+  const generateTicketBlob = async () => {
+        // Prepare data for API
+        const items = answeredMarkets.map((market, i) => {
+            const pickId = picks[market.id]
+            let label = ''
+            if (market.type === 'score') {
+                label = "Pontszám tipp"
+            } else if (market.type === 'ranking') {
+                label = "Sorrend tipp"
+            } else {
+                const option = market.options_json?.find((o: any) => o.id === pickId)
+                label = option ? option.label : '???'
+            }
+
+            const isFav = favorites[market.id]
+            let favLabel = ''
+            if (isFav && isFav !== pickId && market.options_json) {
+                const favOption = market.options_json.find((o: any) => o.id === isFav)
+                if (favOption) {
+                    favLabel = favOption.label
+                }
+            }
+
+            return {
+                num: (i + 1).toString().padStart(2, '0'),
+                q: market.question,
+                a: label,
+                fav: !!isFav,
+                favLabel: favLabel
+            }
+        });
+
+        const response = await fetch('/api/generate-ticket', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                eventTitle,
+                eventSlug,
+                items
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('API Error Response:', errorData);
+            throw new Error(errorData.error || 'API Error');
+        }
+
+        return await response.blob();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+      <div className="w-full max-w-md relative">
+         <button 
+            onClick={onClose}
+            className="fixed right-4 top-4 z-[60] text-white hover:text-yellow-400 transition-colors md:absolute md:-right-12 md:-top-2"
+         >
+            <X className="w-8 h-8" />
+         </button>
+
+         {/* Controls - Sticky Header */}
+         <div className="sticky top-0 z-50 py-4 mb-2 flex flex-col items-center justify-center backdrop-blur-md bg-black/40 rounded-b-xl border-b border-white/10 shadow-lg">
+             <button
+                onClick={handleDownload}
+                disabled={isGenerating}
+                className="bg-yellow-400 text-black px-6 py-3 font-black uppercase text-sm border-2 border-white shadow-[4px_4px_0px_0px_rgba(255,255,255,0.5)] flex items-center gap-2 hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-50"
+             >
+                {isGenerating ? 'Generálás...' : (
+                    <>
+                        <Download className="w-4 h-4" /> Kép Mentése / Megosztása
+                    </>
+                )}
+             </button>
+             
+             <button
+                onClick={handleCopy}
+                disabled={isGenerating}
+                className={`mt-3 px-6 py-2 font-black uppercase text-xs border-2 flex items-center gap-2 transition-all disabled:opacity-50 ${isCopied ? 'bg-green-500 text-white border-green-500' : 'bg-white text-black border-white/50 hover:border-white hover:bg-gray-100'}`}
+             >
+                {isCopied ? (
+                    <>
+                        <Check className="w-3 h-3" /> Vágólapra Másolva!
+                    </>
+                ) : (
+                    <>
+                        <Copy className="w-3 h-3" /> Vágólapra Másolás (Facebookhoz)
+                    </>
+                )}
+             </button>
+
+             <span className="text-white text-xs font-bold opacity-80 decoration-dashed mt-2">
+                 (Mobilon megosztás, Gépen letöltés)
+             </span>
+         </div>
+
+         {/* THE RECEIPT PREVIEW (Just for display now, not for generation) */}
+         <div className="overflow-hidden rounded-sm shadow-2xl relative" style={{ margin: '0 auto' }}>
+             <div 
+                className="p-6 font-mono text-sm leading-relaxed border-t-8 border-b-8 relative"
+                style={{ 
+                    minHeight: '400px',
+                    backgroundColor: COLORS.white,
+                    color: COLORS.black,
+                    borderColor: COLORS.yellow400
+                }}
+             >
+                 {/* Watermark/Pattern */}
+                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: "radial-gradient(#000 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
+
+                 {/* Header */}
+                 <div 
+                    className="text-center mb-6 border-b-2 border-dashed pb-6"
+                    style={{ borderColor: COLORS.black }}
+                 >
+                     <h2 className="text-3xl font-black uppercase tracking-tighter mb-1">PREDIKT</h2>
+                     <p className="text-xs font-bold uppercase tracking-widest" style={{ color: COLORS.gray500 }}>Hivatalos Tippszelvény</p>
+                     
+                     <div 
+                        className="mt-4 border-2 inline-block min-w-[120px]"
+                        style={{ borderColor: COLORS.black, padding: '12px 24px' }}
+                     >
+                         <h3 className="text-xl font-black uppercase leading-[1.1] block">{eventTitle}</h3>
+                     </div>
+                     
+                     <div className="mt-4 flex justify-between text-xs font-bold" style={{ color: COLORS.gray500 }}>
+                         <span>DÁTUM: {new Date().toLocaleDateString('hu-HU')}</span>
+                         <span>ID: #{eventSlug.substring(0, 6).toUpperCase()}</span>
+                     </div>
+                 </div>
+
+                 {/* List */}
+                 <div className="space-y-4 mb-8">
+                     {answeredMarkets.map((market, i) => {
+                         const pickId = picks[market.id]
+                         
+                         let label = ''
+                         if (market.type === 'score') {
+                             label = "Pontszám tipp"
+                         } else if (market.type === 'ranking') {
+                             label = "Sorrend tipp"
+                         } else {
+                             const option = market.options_json?.find((o: any) => o.id === pickId)
+                             label = option ? option.label : '???'
+                         }
+
+                         const isFav = favorites[market.id]
+                         
+                         let favLabel = ''
+                         if (isFav && isFav !== pickId && market.options_json) {
+                             const favOption = market.options_json.find((o: any) => o.id === isFav)
+                             if (favOption) {
+                                 favLabel = favOption.label
+                             }
+                         }
+
+                         return (
+                             <div 
+                                key={market.id} 
+                                className="flex flex-col border-b pb-4 last:border-0 relative"
+                                style={{ borderColor: COLORS.gray200 }}
+                             >
+                                 <div className="flex justify-between items-start gap-4 mb-2">
+                                     <span className="font-bold uppercase text-xs opacity-60 w-8 shrink-0">{(i + 1).toString().padStart(2, '0')}.</span>
+                                     <span className="font-bold flex-grow uppercase leading-tight">{market.question}</span>
+                                 </div>
+                                 <div className="pl-12">
+                                    <div className="flex items-center justify-between">
+                                        <div 
+                                            style={{ 
+                                                display: 'inline-block',
+                                                backgroundColor: COLORS.black, 
+                                                color: COLORS.white,
+                                                padding: '12px 16px',
+                                                minWidth: '60px',
+                                                textAlign: 'center',
+                                                fontSize: '18px',
+                                                fontWeight: 900,
+                                                lineHeight: '1.25',
+                                            }}
+                                        >
+                                            {label}
+                                        </div>
+                                        {/* Show heart here ONLY if it matches the pick OR if it's a general favorite indicator and we don't have a specific different label to show */}
+                                        {(isFav && (!favLabel || isFav === pickId)) && (
+                                            <Heart className="w-5 h-5" style={{ color: COLORS.black, fill: COLORS.black }} />
+                                        )}
+                                    </div>
+                                    
+                                    {/* Separate Favorite Display */}
+                                    {favLabel && (
+                                        <div className="mt-2 flex items-center gap-2 text-xs font-bold uppercase" style={{ color: COLORS.black }}>
+                                            <Heart className="w-3 h-3" style={{ color: COLORS.black, fill: COLORS.black }} />
+                                            <span style={{ opacity: 0.7 }}>Szívügyem:</span>
+                                            <span>{favLabel}</span>
+                                        </div>
+                                    )}
+                                 </div>
+                             </div>
+                         )
+                     })}
+                 </div>
+
+                 {/* Footer */}
+                 <div className="border-t-2 border-dashed pt-6 text-center" style={{ borderColor: COLORS.black }}>
+                     <div className="mb-4">
+                         <div className="inline-block border-2 mb-2" style={{ borderColor: COLORS.black, padding: '12px 24px' }}>
+                            <span className="font-black uppercase text-xl tracking-widest leading-[1.1] block">SOK SIKERT!</span>
+                         </div>
+                     </div>
+                     
+                     <p className="text-xs font-bold uppercase mb-1">Készítsd el te is a saját tippedet:</p>
+                     <p className="text-sm font-black underline">predikt.hu/e/{eventSlug}</p>
+                     
+                     <div className="mt-6 flex justify-center opacity-50">
+                        {/* Fake Barcode */}
+                        <div className="h-8 flex gap-1">
+                            {[...Array(20)].map((_, i) => (
+                                <div 
+                                    key={i} 
+                                    className={`h-full ${Math.random() > 0.5 ? 'w-1' : 'w-2'}`}
+                                    style={{ backgroundColor: COLORS.black }}
+                                ></div>
+                            ))}
+                        </div>
+                     </div>
+                 </div>
+             </div>
+         </div>
+      </div>
+    </div>
+  )
+}

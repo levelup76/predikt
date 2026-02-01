@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, CheckCircle2, Clock, Trophy } from 'lucide-react'
+import { Calendar, CheckCircle2, Clock, Trophy, Heart } from 'lucide-react'
 
 export const revalidate = 0; // Always fresh data for user specific pages
 
@@ -19,6 +19,7 @@ export default async function MyPredictions() {
     .select(`
       id,
       picks_json,
+      favorites_json,
       points,
       created_at,
       events (
@@ -75,6 +76,8 @@ export default async function MyPredictions() {
             const markets = event.markets || [];
             // @ts-ignore
             const picks = prediction.picks_json || {};
+            // @ts-ignore
+            const favorites = prediction.favorites_json || {};
             
             const totalMarkets = markets.length;
             const answeredCount = Object.keys(picks).length;
@@ -159,15 +162,19 @@ export default async function MyPredictions() {
                         {markets.slice(0, 4).map((market: any) => { // Show first 4
                             const pickedOptionId = picks[market.id];
                             const pickedOption = market.options_json?.find((o: any) => o.id === pickedOptionId);
+                            const isFavorite = favorites[market.id] === pickedOptionId;
                             
                             return (
                                 <div key={market.id} className="text-sm flex items-center justify-between bg-white dark:bg-black p-3 border-2 border-black dark:border-white">
                                     <span className="font-bold uppercase truncate max-w-[60%] block pr-2" title={market.question}>
                                         {market.question}
                                     </span>
-                                    <span className={`font-mono text-xs px-2 py-1 ${pickedOption ? 'bg-black text-white dark:bg-white dark:text-black font-bold' : 'text-gray-400 italic border border-dashed border-gray-400'}`}>
-                                        {pickedOption ? pickedOption.label : 'Nincs tipp'}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        {isFavorite && <Heart className="w-4 h-4 text-red-500 fill-current" />}
+                                        <span className={`font-mono text-xs px-2 py-1 ${pickedOption ? 'bg-black text-white dark:bg-white dark:text-black font-bold' : 'text-gray-400 italic border border-dashed border-gray-400'}`}>
+                                            {pickedOption ? pickedOption.label : 'Nincs tipp'}
+                                        </span>
+                                    </div>
                                 </div>
                             )
                         })}

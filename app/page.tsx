@@ -11,6 +11,7 @@ export default async function Home() {
     .from("events")
     .select("id, title, slug, description, lock_at, status, theme, category")
     .eq("status", "open")
+    .neq("visibility", "private")
     .order("created_at", { ascending: false });
 
   return (
@@ -43,7 +44,7 @@ export default async function Home() {
              <h3 className="font-bold text-lg uppercase mb-2">Hogyan?</h3>
              <ul className="list-disc list-inside space-y-2 text-sm">
                <li>Hozz létre eseményt</li>
-               <li>Hívd meg a spanokat</li>
+               <li>Hívd meg a haverokat</li>
                <li>Tippeljetek</li>
                <li>Röhögj a veszteseken</li>
              </ul>

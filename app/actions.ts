@@ -172,11 +172,12 @@ export async function saveMarketsAction(eventId: string, markets: any[]) {
   return { success: true }
 }
 
-export async function publishEventAction(eventId: string) {
+export async function publishEventAction(eventId: string, visibility: 'public' | 'private' = 'public') {
   const supabase = await createClient()
   
   const { error } = await supabase.from('events').update({
-    status: 'open'
+    status: 'open',
+    visibility: visibility
   }).eq('id', eventId)
   
   if (error) return { error: 'Hiba a publikáláskor' }
@@ -187,7 +188,7 @@ export async function publishEventAction(eventId: string) {
   return { success: true, slug: data?.slug }
 }
 
-export async function submitPredictionAction(eventId: string, picks: Record<string, any>) {
+export async function submitPredictionAction(eventId: string, picks: Record<string, any>, favorites: Record<string, any> = {}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Jelentkezz be a tippeléshez!' }
@@ -230,6 +231,7 @@ export async function submitPredictionAction(eventId: string, picks: Record<stri
     user_id: user.id,
     event_id: eventId,
     picks_json: picks,
+    favorites_json: favorites,
     submitted_at: new Date().toISOString(),
   }, {
     onConflict: 'user_id, event_id'

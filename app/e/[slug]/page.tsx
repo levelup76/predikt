@@ -14,7 +14,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   const { data: event } = await supabase
     .from('events')
     .select(`
-      id, slug, title, description, category, lock_at, source_url, theme, status, cover_image, creator_id, result_json,
+      id, slug, title, description, category, lock_at, source_url, theme, status, cover_image, creator_id, result_json, visibility,
       markets (id, question, options_json, order, type)
     `)
     .eq('slug', slug)
@@ -34,7 +34,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   if (user) {
     const { data: prediction } = await supabase
       .from('predictions')
-      .select('picks_json')
+      .select('picks_json, favorites_json')
       .eq('event_id', event.id)
       .eq('user_id', user.id)
       .single()
@@ -81,13 +81,18 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
           <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: "radial-gradient(#ffffff 2px, transparent 2px)", backgroundSize: "20px 20px" }}></div>
           
           <div className="container mx-auto max-w-4xl py-12 px-4 relative z-10">
-             <div className="flex items-center gap-3 mb-6">
+             <div className="flex items-center gap-3 mb-6 flex-wrap">
                <span className="bg-yellow-400 text-black text-xs font-black px-2 py-1 uppercase tracking-widest border-2 border-white">
                  {event.category || 'Általános'}
                </span>
                <span className={`bg-white text-black text-xs font-black px-2 py-1 uppercase tracking-widest border-2 border-white flex items-center`}>
                  {isLocked ? <><Lock className="w-3 h-3 mr-1"/> Lezárva</> : 'Nyitva'}
                </span>
+               {event.visibility === 'private' && (
+                    <span className="bg-red-500 text-white text-xs font-black px-2 py-1 uppercase tracking-widest border-2 border-white flex items-center">
+                        <Lock className="w-3 h-3 mr-1" /> Privát Esemény
+                    </span>
+               )}
              </div>
              
              <h1 className="text-4xl md:text-6xl font-black mb-6 leading-none uppercase tracking-tight">{event.title}</h1>
@@ -150,6 +155,8 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
           
           <BettingForm 
             eventId={event.id}
+            eventTitle={event.title}
+            eventSlug={event.slug}
             markets={event.markets}
             userPrediction={userPrediction}
             isLocked={isLocked || !user}

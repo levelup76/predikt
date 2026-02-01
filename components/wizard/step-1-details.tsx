@@ -26,7 +26,8 @@ export default function Step1Details() {
     const result = await createEventDraftAction(data)
     
     if (result.success) {
-      router.push(`/create/${result.eventId}/design`)
+      // 2026-02-01: Skipping Design Step (Step 2) as per request
+      router.push(`/create/${result.eventId}/markets`)
     } else {
       alert(result.error)
       setIsPending(false)
@@ -117,7 +118,7 @@ export default function Step1Details() {
         >
           {isPending ? <Loader2 className="animate-spin" /> : (
             <>
-                Tovább a Designhoz
+                Tovább a Kérdésekhez
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </>
           )}

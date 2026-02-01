@@ -23,6 +23,7 @@ export default async function MyEventsPage() {
         status, 
         created_at, 
         lock_at, 
+        visibility, 
         predictions:predictions(count)
     `)
     .eq('creator_id', user.id)
@@ -85,10 +86,16 @@ export default async function MyEventsPage() {
                 className="bg-white dark:bg-gray-900 p-6 border-2 border-black dark:border-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all rounded-none"
               >
                  <div className="flex-grow">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
                         <span className={`px-2 py-0.5 border-2 text-xs font-black uppercase tracking-wide ${statusColors}`}>
                             {statusLabel}
                         </span>
+                        {/* @ts-ignore */}
+                        {event.visibility === 'private' && (
+                             <span className="px-2 py-0.5 border-2 text-xs font-black uppercase tracking-wide bg-red-500 text-white border-black dark:border-white">
+                                Privát
+                             </span>
+                        )}
                         <div className="flex items-center text-xs text-gray-500 font-bold uppercase">
                             <Calendar className="w-3 h-3 mr-1" />
                             {new Date(event.created_at).toLocaleDateString('hu-HU')}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { GripVertical } from 'lucide-react'
+import { GripVertical, Heart } from 'lucide-react'
 import clsx from 'clsx'
 
 type Option = { id: string, label: string }
@@ -10,12 +10,16 @@ type Market = { id: string, question: string, options_json: Option[] }
 export default function RankingMarket({
   market,
   value,
+  favoriteId,
   onChange,
+  onFavorite,
   disabled
 }: {
   market: Market,
   value?: string[],
+  favoriteId?: string,
   onChange: (newOrder: string[]) => void,
+  onFavorite: (id: string) => void,
   disabled: boolean
 }) {
   // If no value provided, use original order
@@ -106,6 +110,22 @@ export default function RankingMarket({
                <div className="flex-1 font-bold uppercase text-lg">
                   {option.label}
                </div>
+
+               <button
+                 type="button"
+                 className={clsx(
+                   "p-2 mr-2 transition-transform hover:scale-110",
+                   favoriteId === optionId ? "text-red-500" : "text-gray-300 hover:text-red-400"
+                 )}
+                 onClick={(e) => {
+                   e.stopPropagation() 
+                   onFavorite(optionId)
+                 }}
+                 disabled={disabled}
+                 title="Jelöld meg kedvencként"
+               >
+                 <Heart className={clsx("w-6 h-6", favoriteId === optionId && "fill-current")} />
+               </button>
 
                <GripVertical className="text-black dark:text-white w-6 h-6" />
                

@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { eventMarketsSchema, EventMarketsForm } from '@/lib/schemas'
-import { saveMarketsAction, publishEventAction } from '@/app/actions'
-import { Loader2, Plus, Trash2, CheckCircle2 } from 'lucide-react'
+import { saveMarketsAction } from '@/app/actions'
+import { Loader2, Plus, Trash2, CheckCircle2, Eye, X, ArrowRight } from 'lucide-react'
+import BettingForm from '@/components/event/betting-form'
+import { PreviewModal } from '@/components/event/preview-modal'
 
 // Common Neo-Brutalist styles
 const inputParams = "w-full p-2 border-2 border-black dark:border-white bg-transparent rounded-none focus:outline-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:focus:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] transition-all placeholder:text-gray-400"
@@ -16,6 +18,7 @@ const btnParams = "px-4 py-2 font-bold uppercase border-2 border-black rounded-n
 export default function Step3Markets({ eventId, initialData = [] }: { eventId: string, initialData?: any[] }) {
   const router = useRouter()
   const [isPublishing, setIsPublishing] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
 
   const defaultValues = initialData.length > 0 ? {
     markets: initialData.map(m => ({
@@ -54,16 +57,8 @@ export default function Step3Markets({ eventId, initialData = [] }: { eventId: s
        return
     }
 
-    // 2. Publish Event
-    const pubResult = await publishEventAction(eventId)
-    
-    if (pubResult.success) {
-      // Success! Redirect to the public event page
-      router.push(`/e/${pubResult.slug}`)
-    } else {
-      alert(pubResult.error)
-      setIsPublishing(false)
-    }
+    // 2. Redirect to Preview Step (Step 3)
+    router.push(`/create/${eventId}/preview`)
   }
 
   return (
@@ -76,9 +71,9 @@ export default function Step3Markets({ eventId, initialData = [] }: { eventId: s
         {marketFields.map((market, mIndex) => (
           <div key={market.id} className="p-6 border-2 border-black dark:border-white bg-white dark:bg-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative group">
             
-            <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute right-4 bottom-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                {marketFields.length > 1 && (
-                 <button type="button" onClick={() => removeMarket(mIndex)} className="text-red-500 hover:text-white hover:bg-red-500 border-2 border-red-500 p-1 transition-colors">
+                 <button type="button" onClick={() => removeMarket(mIndex)} className="text-red-500 hover:text-white hover:bg-red-500 border-2 border-red-500 p-2 transition-colors bg-white dark:bg-black" title="Kérdés törlése">
                    <Trash2 className="w-5 h-5" />
                  </button>
                )}
@@ -142,18 +137,43 @@ export default function Step3Markets({ eventId, initialData = [] }: { eventId: s
            {form.formState.errors.markets && (
               <p className="text-red-500 font-bold text-center mb-4 uppercase bg-red-100 p-2 border border-red-500 inline-block w-full">{form.formState.errors.markets.message}</p>
            )}
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <button 
+                 type="button"
+                 onClick={() => setShowPreview(true)}
+                 className="w-full py-4 bg-white text-black dark:bg-black dark:text-white font-black uppercase text-xl border-2 border-black dark:border-white hover:bg-yellow-400 hover:text-black transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] flex items-center justify-center"
+               >
+                 <Eye className="w-6 h-6 mr-2" />
+                 Előnézet
+               </button>
 
-           <button 
-             type="submit" 
-             disabled={isPublishing}
-             className="w-full py-4 bg-black text-white dark:bg-white dark:text-black font-black uppercase text-xl border-2 border-black dark:border-white hover:bg-green-400 hover:text-black hover:border-black transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 flex items-center justify-center"
-           >
-             {isPublishing ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle2 className="w-6 h-6 mr-2" />}
-             Esemény Publikálása!
-           </button>
+               <button 
+                 type="submit" 
+                 disabled={isPublishing}
+                 className="w-full py-4 bg-black text-white dark:bg-white dark:text-black font-black uppercase text-xl border-2 border-black dark:border-white hover:bg-green-400 hover:text-black hover:border-black transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] flex items-center justify-center"
+               >
+                 {isPublishing ? <Loader2 className="animate-spin mr-2" /> : <ArrowRight className="w-6 h-6 mr-2" />}
+                 Tovább a publikáláshoz
+               </button>
+           </div>
         </div>
-
       </form>
+
+      <PreviewModal 
+        isOpen={showPreview} 
+        onClose={() => setShowPreview(false)}
+        markets={form.watch('markets').map((m, i) => ({
+           id: `preview-${i}`, 
+           question: m.question || 'Kérdés helye...',
+           type: m.type,
+           options_json: m.options.map((o, oi) => ({
+               id: `opt-${oi}`,
+               label: o.label || `Opció ${oi + 1}`
+           }))
+        }))}
+      />
+
+
     </div>
   )
 }

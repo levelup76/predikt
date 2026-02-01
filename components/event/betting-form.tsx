@@ -4,16 +4,19 @@ import { useState } from 'react'
 import { submitPredictionAction } from '@/app/actions'
 import { useRouter } from 'next/navigation'
 import clsx from 'clsx'
-import { Loader2, CheckCircle, Lock } from 'lucide-react'
+import { Loader2, CheckCircle, Lock, Heart, Share2, Link as LinkIcon, Camera } from 'lucide-react'
 import RankingMarket from './ranking-market'
+import SharePicksModal from './share-picks-modal'
 
 // Types for props
 type Option = { id: string, label: string }
 type Market = { id: string, question: string, options_json: Option[], type?: string }
-type Prediction = { picks_json: Record<string, any> } | null
+type Prediction = { picks_json: Record<string, any>, favorites_json?: Record<string, any> } | null
 
 export default function BettingForm({ 
   eventId, 
+  eventTitle,
+  eventSlug,
   markets, 
   userPrediction, 
   isLocked,
@@ -22,6 +25,8 @@ export default function BettingForm({
   totalPredictions = 0
 }: { 
   eventId: string, 
+  eventTitle: string,
+  eventSlug: string,
   markets: Market[], 
   userPrediction: Prediction,
   isLocked: boolean,
@@ -32,7 +37,10 @@ export default function BettingForm({
   const router = useRouter()
   // Load initial picks from existing prediction or empty
   const [picks, setPicks] = useState<Record<string, any>>(userPrediction?.picks_json || {})
+  const [favorites, setFavorites] = useState<Record<string, any>>(userPrediction?.favorites_json || {})
   const [isPending, setIsPending] = useState(false)
+  const [isShareOpen, setIsShareOpen] = useState(false)
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null)
   
   // Calculate completion percentage
   const answeredCount = Object.keys(picks).length
@@ -75,21 +83,87 @@ export default function BettingForm({
     }))
   }
 
+  const handleFavorite = (marketId: string, optionId: string) => {
+    // Allows toggling off if already selected? Let's say yes.
+    if (isLocked) return
+    setFavorites(prev => {
+        if (prev[marketId] === optionId) {
+            const copy = { ...prev }
+            delete copy[marketId]
+            return copy
+        }
+        return {
+            ...prev,
+            [marketId]: optionId
+        }
+    })
+  }
+
+  const handleShareEvent = async () => {
+    const url = `${window.location.origin}/e/${eventSlug}`
+    
+    // Try native share first
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Tippelj erre: ${eventTitle}`,
+          url: url
+        })
+        return
+      } catch (err) {
+        // Ignore abort
+      }
+    }
+
+    // Fallback to clipboard
+    try {
+      await navigator.clipboard.writeText(url)
+      setFeedback({ type: 'success', message: 'Link másolva a vágólapra!' })
+      setTimeout(() => setFeedback(null), 2000)
+    } catch (err) {
+       // Ignore
+    }
+  }
+
   const handleSubmit = async () => {
     setIsPending(true)
-    const result = await submitPredictionAction(eventId, picks)
+    const result = await submitPredictionAction(eventId, picks, favorites)
     setIsPending(false)
     
     if (result.success) {
-      alert('Tippek sikeresen mentve!')
+      setFeedback({ type: 'success', message: 'Tippek sikeresen mentve!' })
       router.refresh()
     } else {
-      alert(result.error)
+      setFeedback({ type: 'error', message: result.error || 'Ismeretlen hiba' })
     }
   }
 
   return (
     <div className="space-y-12">
+      {/* Feedback Modal */}
+      {feedback && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+           <div className="bg-white dark:bg-gray-800 border-2 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] max-w-sm w-full relative">
+               <div className={clsx(
+                   "p-4 border-b-2 border-black dark:border-white",
+                   feedback.type === 'success' ? "bg-green-400 text-black" : "bg-red-500 text-white"
+               )}>
+                   <h3 className="text-2xl font-black uppercase text-center">
+                       {feedback.type === 'success' ? 'Siker!' : 'Hiba!'}
+                   </h3>
+               </div>
+               <div className="p-8 text-center space-y-6">
+                   <p className="font-bold text-lg dark:text-white">{feedback.message}</p>
+                   <button 
+                       onClick={() => setFeedback(null)}
+                       className="w-full bg-black text-white dark:bg-white dark:text-black font-black uppercase py-3 border-2 border-transparent hover:bg-yellow-400 hover:text-black hover:border-black transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
+                   >
+                       Rendben
+                   </button>
+               </div>
+           </div>
+        </div>
+      )}
       
       {/* Progress Bar - Sticky */}
       <div className="bg-white dark:bg-gray-900 p-4 border-b-4 border-black dark:border-white sticky top-0 z-30 flex items-center justify-between shadow-[0px_4px_0px_0px_rgba(0,0,0,0.1)] -mx-4 md:mx-0 md:border-2 md:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
@@ -98,25 +172,50 @@ export default function BettingForm({
             <span className="text-xl font-black text-black dark:text-white uppercase">{answeredCount} / {totalCount} tipp</span>
          </div>
          
-         {!isLocked ? (
-           <button 
-             onClick={handleSubmit} 
-             disabled={!isComplete || isPending}
-             className={clsx(
-               "px-6 py-2 font-black uppercase text-sm border-2 transition-all flex items-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px]",
-               isComplete 
-                 ? "bg-black text-white border-black hover:bg-yellow-400 hover:text-black dark:bg-white dark:text-black dark:border-white" 
-                 : "bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed shadow-none"
-             )}
-           >
-             {isPending && <Loader2 className="animate-spin mr-2 w-4 h-4" />}
-             {userPrediction ? 'Frissítés' : 'Beküldés'}
-           </button>
-         ) : (
-           <div className="flex items-center text-white font-black uppercase bg-red-500 border-2 border-black px-4 py-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-             <Lock className="w-4 h-4 mr-2" /> Lezárva
-           </div>
-         )}
+         <div className="flex items-center gap-2">
+            
+            {/* Share Event Button */}
+            <button
+                onClick={handleShareEvent}
+                className="hidden sm:flex items-center gap-2 px-3 py-2 border-2 border-black dark:border-white bg-white dark:bg-black hover:bg-yellow-400 hover:text-black transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px]"
+                title="Esemény linkjének megosztása"
+            >
+                <LinkIcon className="w-4 h-4" />
+                <span className="text-xs font-black uppercase">Esemény</span>
+            </button>
+
+            {/* Share Picks Button */}
+            {answeredCount > 0 && (
+                <button
+                    onClick={() => setIsShareOpen(true)}
+                    className="flex items-center gap-2 px-3 py-2 border-2 border-black dark:border-white bg-white dark:bg-black hover:bg-yellow-400 hover:text-black transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px]"
+                    title="Saját tippjeim megosztása képként"
+                >
+                    <Camera className="w-4 h-4" />
+                    <span className="text-xs font-black uppercase hidden sm:inline">Tippjeim</span>
+                </button>
+            )}
+
+            {!isLocked ? (
+            <button 
+                onClick={handleSubmit} 
+                disabled={!isComplete || isPending}
+                className={clsx(
+                "px-6 py-2 font-black uppercase text-sm border-2 transition-all flex items-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px]",
+                isComplete 
+                    ? "bg-black text-white border-black hover:bg-yellow-400 hover:text-black dark:bg-white dark:text-black dark:border-white" 
+                    : "bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed shadow-none"
+                )}
+            >
+                {isPending && <Loader2 className="animate-spin mr-2 w-4 h-4" />}
+                {userPrediction ? 'Frissítés' : 'Beküldés'}
+            </button>
+            ) : (
+            <div className="flex items-center text-white font-black uppercase bg-red-500 border-2 border-black px-4 py-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <Lock className="w-4 h-4 mr-2" /> Lezárva
+            </div>
+            )}
+         </div>
       </div>
 
       {/* Markets List */}
@@ -141,7 +240,17 @@ export default function BettingForm({
                        return (
                          <div key={option.id} className="flex items-center justify-between p-4 border-2 border-black dark:border-white bg-white dark:bg-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.5)]">
                             <div className="flex flex-col">
-                                <span className="font-bold uppercase text-sm">{option.label}</span>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-bold uppercase text-sm">{option.label}</span>
+                                    <button 
+                                        onClick={() => handleFavorite(market.id, option.id)}
+                                        disabled={isLocked}
+                                        className={clsx("transition-transform hover:scale-110", favorites[market.id] === option.id ? "text-red-500" : "text-gray-300 hover:text-red-400")}
+                                        title="Kedvencnek jelölés"
+                                    >
+                                        <Heart size={16} className={clsx(favorites[market.id] === option.id && "fill-current")} />
+                                    </button>
+                                </div>
                                 {!!results && results[market.id] && (
                                    <span className="text-xs text-black bg-green-400 inline-block px-1 border border-black mt-1 font-bold uppercase">Eredmény: {results[market.id]?.[option.id]}</span>
                                 )}
@@ -169,7 +278,9 @@ export default function BettingForm({
                      <RankingMarket 
                         market={market}
                         value={picks[market.id] as string[] | undefined}
+                        favoriteId={favorites[market.id]}
                         onChange={(newOrder) => handleRankingChange(market.id, newOrder)}
+                        onFavorite={(id) => handleFavorite(market.id, id)}
                         disabled={isLocked}
                      />
                   </div>
@@ -214,17 +325,26 @@ export default function BettingForm({
                     }
 
                     return (
-                      <button
+                      <div
                         key={option.id}
-                        onClick={() => handleSelect(market.id, option.id)}
-                        disabled={isLocked}
+                        onClick={() => !isLocked && handleSelect(market.id, option.id)}
+                        role="button"
+                        tabIndex={isLocked ? -1 : 0}
+                        aria-disabled={isLocked}
+                        onKeyDown={(e) => {
+                            if (!isLocked && (e.key === 'Enter' || e.key === ' ')) {
+                                e.preventDefault();
+                                handleSelect(market.id, option.id);
+                            }
+                        }}
                         className={clsx(
                           "p-4 border-2 text-left transition-all relative overflow-hidden group min-h-[80px] flex flex-col justify-center",
                           borderColor,
                           bgColor,
                           textColor,
                           shadow,
-                          !isLocked && !isRevealed && "hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
+                          !isLocked && !isRevealed && "hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none cursor-pointer",
+                          isLocked && "cursor-not-allowed opacity-80"
                         )}
                       >
                          {/* Progress Bar Background for Stats */}
@@ -236,7 +356,17 @@ export default function BettingForm({
                          )}
 
                         <div className="relative z-10 flex items-center justify-between w-full">
-                            <span className="font-bold uppercase tracking-wide text-sm pr-6">{option.label}</span>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleFavorite(market.id, option.id); }}
+                                    disabled={isLocked}
+                                    className={clsx("p-1 z-20 transition-transform hover:scale-110", favorites[market.id] === option.id ? "text-red-500" : "text-gray-300 hover:text-red-400")}
+                                    title="Kedvencnek jelölés"
+                                >
+                                    <Heart size={20} className={clsx(favorites[market.id] === option.id && "fill-current")} />
+                                </button>
+                                <span className="font-bold uppercase tracking-wide text-sm pr-6">{option.label}</span>
+                            </div>
                             
                             {/* Icons for selection/result */}
                             {isSelected && !isRevealed && (
@@ -255,7 +385,7 @@ export default function BettingForm({
                                  </div>
                              </div>
                          )}
-                      </button>
+                      </div>
                     )
                   })}
                 </div>
@@ -264,6 +394,16 @@ export default function BettingForm({
           </div>
         ))}
       </div>
+
+      <SharePicksModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        eventTitle={eventTitle}
+        eventSlug={eventSlug}
+        picks={picks}
+        favorites={favorites}
+        markets={markets}
+      />
     </div>
   )
 }

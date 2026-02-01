@@ -28,7 +28,6 @@ export default async function Header() {
         <nav className="hidden md:flex items-center gap-1 font-bold text-sm uppercase">
           <Link href="/" className="px-3 py-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all">Felfedezés</Link>
           <Link href="/archive" className="px-3 py-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all">Korábbi</Link>
-          <Link href="/about" className="px-3 py-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all">Rólunk</Link>
           {user && (
              <>
                <span className="text-gray-300">|</span>

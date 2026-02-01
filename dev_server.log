@@ -1,0 +1,135 @@
+
+> predikt@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.100.81:3000
+- Environments: .env.local
+
+✓ Starting...
+✓ Ready in 682ms
+ GET /e/98-oscar-gla-jellsei-woxo9 200 in 1254ms (compile: 684ms, render: 570ms)
+API: Local font loaded. Size: 297793
+⨯ Error: failed to pipe response
+    at ignore-listed frames {
+  [cause]: Error: Unsupported OpenType signature 
+  
+  
+  
+  
+      at ignore-listed frames
+}
+ POST /api/generate-ticket 500 in 317ms (compile: 159ms, render: 158ms)
+ GET /e/98-oscar-gla-jellsei-woxo9 200 in 502ms (compile: 22ms, render: 479ms)
+ GET /e/98-oscar-gla-jellsei-woxo9 200 in 943ms (compile: 16ms, render: 927ms)
+API: Local font loaded. Size: 297793
+⨯ Error: failed to pipe response
+    at ignore-listed frames {
+  [cause]: Error: Unsupported OpenType signature 
+  
+  
+  
+  
+      at ignore-listed frames
+}
+ POST /api/generate-ticket 500 in 119ms (compile: 5ms, render: 114ms)
+API: Local font loaded. Size: 297793
+⨯ Error: failed to pipe response
+    at ignore-listed frames {
+  [cause]: Error: Unsupported OpenType signature 
+  
+  
+  
+  
+      at ignore-listed frames
+}
+ POST /api/generate-ticket 500 in 48ms (compile: 1290µs, render: 46ms)
+API: Local font loaded. Size: 297793
+⨯ Error: failed to pipe response
+    at ignore-listed frames {
+  [cause]: Error: Unsupported OpenType signature 
+  
+  
+  
+  
+      at ignore-listed frames
+}
+ POST /api/generate-ticket 500 in 37ms (compile: 846µs, render: 36ms)
+API: Local font loaded. Size: 297793
+⨯ Error: failed to pipe response
+    at ignore-listed frames {
+  [cause]: Error: Unsupported OpenType signature 
+  
+  
+  
+  
+      at ignore-listed frames
+}
+ POST /api/generate-ticket 500 in 46ms (compile: 1540µs, render: 45ms)
+API: Local font loaded. Size: 297793
+⨯ Error: failed to pipe response
+    at ignore-listed frames {
+  [cause]: Error: Unsupported OpenType signature 
+  
+  
+  
+  
+      at ignore-listed frames
+}
+ POST /api/generate-ticket 500 in 43ms (compile: 947µs, render: 42ms)
+API: Local font loaded. Size: 297793
+⨯ Error: failed to pipe response
+    at ignore-listed frames {
+  [cause]: Error: Unsupported OpenType signature 
+  
+  
+  
+  
+      at ignore-listed frames
+}
+ POST /api/generate-ticket 500 in 55ms (compile: 1423µs, render: 54ms)
+API: Local font loaded. Size: 297793
+⨯ Error: failed to pipe response
+    at ignore-listed frames {
+  [cause]: Error: Unsupported OpenType signature 
+  
+  
+  
+  
+      at ignore-listed frames
+}
+ POST /api/generate-ticket 500 in 40ms (compile: 1035µs, render: 39ms)
+✓ Compiled in 372ms
+ GET /e/98-oscar-gla-jellsei-woxo9 200 in 519ms (compile: 51ms, render: 467ms)
+API: Fetching font from remote URL...
+API: Failed to fetch remote font: 404 Not Found
+ POST /api/generate-ticket 200 in 969ms (compile: 121ms, render: 848ms)
+API: Fetching font from remote URL...
+API: Failed to fetch remote font: 404 Not Found
+ POST /api/generate-ticket 200 in 489ms (compile: 5ms, render: 484ms)
+ GET /e/98-oscar-gla-jellsei-woxo9 200 in 1210ms (compile: 52ms, render: 1158ms)
+✓ Compiled in 154ms
+✓ Compiled in 56ms
+✓ Compiled in 273ms
+ GET /e/98-oscar-gla-jellsei-woxo9 200 in 787ms (compile: 277ms, render: 510ms)
+API: Fetching font from remote URL...
+API: Failed to fetch remote font: 404 Not Found
+ POST /api/generate-ticket 200 in 844ms (compile: 11ms, render: 834ms)
+ GET /e/98-oscar-gla-jellsei-woxo9 200 in 527ms (compile: 42ms, render: 485ms)
+API: Fetching font from remote URL...
+API: Remote font loaded successfully. Size: 15320
+ POST /api/generate-ticket 200 in 1027ms (compile: 90ms, render: 937ms)
+API: Fetching font from remote URL...
+API: Remote font loaded successfully. Size: 15320
+ POST /api/generate-ticket 200 in 942ms (compile: 8ms, render: 934ms)
+ GET /e/98-oscar-gla-jellsei-woxo9 200 in 572ms (compile: 14ms, render: 558ms)
+API: Fetching font from remote URL...
+API: Failed to fetch remote font: 404 Not Found
+ POST /api/generate-ticket 200 in 2.0s (compile: 47ms, render: 1967ms)
+API: Fetching font from remote URL...
+API: Failed to fetch remote font: 404 Not Found
+ POST /api/generate-ticket 200 in 433ms (compile: 4ms, render: 428ms)
+✓ Compiled in 38ms
+✓ Compiled in 18ms
+✓ Compiled in 77ms
