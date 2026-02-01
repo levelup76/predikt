@@ -46,6 +46,8 @@ export function PreviewModal({ isOpen, onClose, markets }: PreviewModalProps) {
 
                    <BettingForm 
                        eventId="preview"
+                       eventTitle="Minta Esemény"
+                       eventSlug="preview"
                        isLocked={false}
                        userPrediction={null}
                        markets={markets}
