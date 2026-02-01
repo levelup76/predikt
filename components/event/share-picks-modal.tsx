@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { X, Download, Heart, Copy, Check } from 'lucide-react'
 import html2canvas from 'html2canvas'
 
@@ -36,7 +36,15 @@ export default function SharePicksModal({
 }: SharePicksModalProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const ticketRef = useRef<HTMLDivElement>(null)
+
+  // Cleanup blob url on unmount or change
+  useEffect(() => {
+    return () => {
+        if (downloadUrl) window.URL.revokeObjectURL(downloadUrl)
+    }
+  }, [downloadUrl])
 
   if (!isOpen) return null
 
@@ -51,9 +59,6 @@ export default function SharePicksModal({
         if (!blob) return;
         
         // Share / Download logic
-        const file = new File([blob], `predikt-${eventSlug}-picks.png`, { type: 'image/png' });
-        
-        // Only try to share on mobile/touch devices where native share sheet is expected
         const isMobile = typeof navigator !== 'undefined' && (navigator.maxTouchPoints > 0 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
         let shared = false;
 
@@ -72,13 +77,16 @@ export default function SharePicksModal({
 
         if (!shared) {
              const url = window.URL.createObjectURL(blob);
+             setDownloadUrl(url);
+             
+             // Try auto-download (works on Chrome/FF, blocked on Safari Desktop)
              const link = document.createElement('a')
              link.href = url
              link.download = `predikt-${eventSlug}-picks.png`
              document.body.appendChild(link)
              link.click()
              document.body.removeChild(link)
-             window.URL.revokeObjectURL(url);
+             // We do NOT revoke here immediately so the button link remains valid
         }
 
     } catch (err) {
@@ -194,17 +202,34 @@ export default function SharePicksModal({
 
          {/* Controls - Sticky Header */}
          <div className="sticky top-0 z-50 py-4 mb-2 flex flex-col items-center justify-center backdrop-blur-md bg-black/40 rounded-b-xl border-b border-white/10 shadow-lg">
-             <button
-                onClick={handleDownload}
-                disabled={isGenerating}
-                className="bg-yellow-400 text-black px-6 py-3 font-black uppercase text-sm border-2 border-white shadow-[4px_4px_0px_0px_rgba(255,255,255,0.5)] flex items-center gap-2 hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-50"
-             >
-                {isGenerating ? 'Generálás...' : (
-                    <>
-                        <Download className="w-4 h-4" /> Kép Mentése / Megosztása
-                    </>
-                )}
-             </button>
+             {downloadUrl ? (
+                <div className="flex flex-col items-center gap-2">
+                    <a
+                        href={downloadUrl}
+                        download={`predikt-${eventSlug}-picks.png`}
+                        className="bg-green-500 text-white px-6 py-3 font-black uppercase text-sm border-2 border-white shadow-[4px_4px_0px_0px_rgba(255,255,255,0.5)] flex items-center gap-2 hover:translate-y-1 hover:shadow-none transition-all animate-bounce"
+                        onClick={() => {
+                             // Let the download happen
+                             setTimeout(() => setDownloadUrl(null), 5000) 
+                        }}
+                    >
+                        <Download className="w-5 h-5" /> KÉP LETÖLTÉSE
+                    </a>
+                    <span className="text-white/80 text-xs">Ha nem töltődött le automatikusan</span>
+                </div>
+             ) : (
+                <button
+                    onClick={handleDownload}
+                    disabled={isGenerating}
+                    className="bg-yellow-400 text-black px-6 py-3 font-black uppercase text-sm border-2 border-white shadow-[4px_4px_0px_0px_rgba(255,255,255,0.5)] flex items-center gap-2 hover:translate-y-1 hover:shadow-none transition-all disabled:opacity-50"
+                >
+                    {isGenerating ? 'Generálás...' : (
+                        <>
+                            <Download className="w-4 h-4" /> Kép Mentése / Megosztása
+                        </>
+                    )}
+                </button>
+             )}
              
              <button
                 onClick={handleCopy}
