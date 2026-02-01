@@ -133,13 +133,17 @@ export default function SharePicksModal({
     const clone = originalElement.cloneNode(true) as HTMLElement;
     
     // Setup clone styles to be rendered off-screen but visible to the engine
+    // FIX: Do not use negative coordinates (-10000px) as it causes html2canvas to create a massive canvas/document clone (25s+ render time)
+    // Instead, place it at top-left but behind everything using z-index.
     clone.style.position = 'fixed';
-    clone.style.top = '-10000px';
-    clone.style.left = '-10000px';
+    clone.style.top = '0px';
+    clone.style.left = '0px';
     clone.style.width = `${offsetWidth}px`;
     clone.style.height = `${offsetHeight}px`;
-    clone.style.zIndex = '-1000';
+    clone.style.zIndex = '-9999'; 
     clone.style.background = '#ffffff'; // Force white background
+    clone.style.opacity = '1'; // Ensure it is technically visible
+    clone.style.pointerEvents = 'none'; // No interactions
     
     // Apply manual padding fix to the clone directly
     const innerContainer = clone.querySelector('#ticket-inner-container') as HTMLElement;
