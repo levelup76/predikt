@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { X, Download, Heart, Copy, Check } from 'lucide-react'
+import html2canvas from 'html2canvas'
 
 interface SharePicksModalProps {
   isOpen: boolean
@@ -35,6 +36,7 @@ export default function SharePicksModal({
 }: SharePicksModalProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
+  const ticketRef = useRef<HTMLDivElement>(null)
 
   if (!isOpen) return null
 
@@ -112,57 +114,30 @@ export default function SharePicksModal({
     }
   }
 
+
   const generateTicketBlob = async () => {
-        // Prepare data for API
-        const items = answeredMarkets.map((market, i) => {
-            const pickId = picks[market.id]
-            let label = ''
-            if (market.type === 'score') {
-                label = "Pontszám tipp"
-            } else if (market.type === 'ranking') {
-                label = "Sorrend tipp"
-            } else {
-                const option = market.options_json?.find((o: any) => o.id === pickId)
-                label = option ? option.label : '???'
-            }
+    if (!ticketRef.current) return null;
+    
+    // Tiny delay to ensure rendering is complete (sometimes helps with fonts)
+    await new Promise(resolve => setTimeout(resolve, 100));
 
-            const isFav = favorites[market.id]
-            let favLabel = ''
-            if (isFav && isFav !== pickId && market.options_json) {
-                const favOption = market.options_json.find((o: any) => o.id === isFav)
-                if (favOption) {
-                    favLabel = favOption.label
-                }
-            }
-
-            return {
-                num: (i + 1).toString().padStart(2, '0'),
-                q: market.question,
-                a: label,
-                fav: !!isFav,
-                favLabel: favLabel
-            }
+    try {
+        const canvas = await html2canvas(ticketRef.current, {
+            scale: 2, // Retina quality
+            useCORS: true,
+            backgroundColor: null, // Transparent background (we handle bg in css)
+            logging: false
         });
 
-        const response = await fetch('/api/generate-ticket', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                eventTitle,
-                eventSlug,
-                items
-            })
+        return new Promise<Blob | null>((resolve) => {
+            canvas.toBlob((blob) => {
+                resolve(blob);
+            }, 'image/png');
         });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error('API Error Response:', errorData);
-            throw new Error(errorData.error || 'API Error');
-        }
-
-        return await response.blob();
+    } catch (error) {
+        console.error('HTML2Canvas Error:', error);
+        throw error;
+    }
   }
 
   return (
@@ -211,14 +186,14 @@ export default function SharePicksModal({
          </div>
 
          {/* THE RECEIPT PREVIEW (Just for display now, not for generation) */}
-         <div className="overflow-hidden rounded-sm shadow-2xl relative" style={{ margin: '0 auto' }}>
+         <div ref={ticketRef} className="overflow-hidden rounded-sm shadow-2xl relative" style={{ margin: '0 auto' }}>
              <div 
-                className="p-6 font-mono text-sm leading-relaxed border-t-8 border-b-8 relative"
+                id="ticket-inner-container"
+                className="p-6 font-mono text-sm leading-relaxed relative"
                 style={{ 
                     minHeight: '400px',
                     backgroundColor: COLORS.white,
                     color: COLORS.black,
-                    borderColor: COLORS.yellow400
                 }}
              >
                  {/* Watermark/Pattern */}
@@ -226,15 +201,14 @@ export default function SharePicksModal({
 
                  {/* Header */}
                  <div 
-                    className="text-center mb-6 border-b-2 border-dashed pb-6"
-                    style={{ borderColor: COLORS.black }}
+                    className="text-center mb-6 pb-6 border-b"
+                    style={{ borderColor: COLORS.gray200 }}
                  >
                      <h2 className="text-3xl font-black uppercase tracking-tighter mb-1">PREDIKT</h2>
                      <p className="text-xs font-bold uppercase tracking-widest" style={{ color: COLORS.gray500 }}>Tippszelvény</p>
                      
                      <div 
-                        className="mt-4 border-2 inline-block min-w-[120px]"
-                        style={{ borderColor: COLORS.black, padding: '12px 24px' }}
+                        className="mt-4 mb-2 min-w-[120px]"
                      >
                          <h3 className="text-xl font-black uppercase leading-[1.1] block">{eventTitle}</h3>
                      </div>
@@ -273,7 +247,7 @@ export default function SharePicksModal({
                          return (
                              <div 
                                 key={market.id} 
-                                className="flex flex-col border-b pb-4 last:border-0 relative"
+                                className="flex flex-col pb-4 mb-4 border-b last:border-0 last:mb-0 last:pb-0 relative"
                                 style={{ borderColor: COLORS.gray200 }}
                              >
                                  <div className="flex justify-between items-start gap-4 mb-2">
@@ -285,11 +259,9 @@ export default function SharePicksModal({
                                         <div 
                                             style={{ 
                                                 display: 'inline-block',
-                                                backgroundColor: COLORS.black, 
-                                                color: COLORS.white,
-                                                padding: '12px 16px',
+                                                padding: '4px 0px',
                                                 minWidth: '60px',
-                                                textAlign: 'center',
+                                                textAlign: 'left',
                                                 fontSize: '18px',
                                                 fontWeight: 900,
                                                 lineHeight: '1.25',
@@ -318,9 +290,9 @@ export default function SharePicksModal({
                  </div>
 
                  {/* Footer */}
-                 <div className="border-t-2 border-dashed pt-6 text-center" style={{ borderColor: COLORS.black }}>
+                 <div className="pt-6 text-center border-t" style={{ borderColor: COLORS.gray200 }}>
                      <div className="mb-4">
-                         <div className="inline-block border-2 mb-2" style={{ borderColor: COLORS.black, padding: '12px 24px' }}>
+                         <div className="inline-block mb-2">
                             <span className="font-black uppercase text-xl tracking-widest leading-[1.1] block">SOK SIKERT!</span>
                          </div>
                      </div>
