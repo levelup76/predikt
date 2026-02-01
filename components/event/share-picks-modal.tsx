@@ -118,15 +118,29 @@ export default function SharePicksModal({
   const generateTicketBlob = async () => {
     if (!ticketRef.current) return null;
     
-    // Tiny delay to ensure rendering is complete (sometimes helps with fonts)
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Tiny delay to ensure rendering is complete
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     try {
+        const { offsetWidth, offsetHeight } = ticketRef.current;
+
         const canvas = await html2canvas(ticketRef.current, {
             scale: 2, // Retina quality
-            useCORS: true,
-            backgroundColor: null, // Transparent background (we handle bg in css)
-            logging: false
+            useCORS: false, // Local content only
+            backgroundColor: '#ffffff', // Explicit white background prevents transparency issues
+            logging: false,
+            width: offsetWidth,
+            height: offsetHeight,
+            onclone: (clonedDoc) => {
+                const element = clonedDoc.querySelector('[data-ticket-container="true"]');
+                if (element instanceof HTMLElement) {
+                    // Start fresh without potential visual artifacts
+                    element.style.boxShadow = 'none';
+                    element.style.borderRadius = '0';
+                    // Simplify radial gradient for Safari stability if needed
+                    // element.style.backgroundImage = 'none'; 
+                }
+            }
         });
 
         return new Promise<Blob | null>((resolve) => {
@@ -186,8 +200,8 @@ export default function SharePicksModal({
          </div>
 
          {/* THE RECEIPT PREVIEW (Just for display now, not for generation) */}
-         <div ref={ticketRef} className="overflow-hidden rounded-sm shadow-2xl relative" style={{ margin: '0 auto' }}>
-             <div 
+         <div ref={ticketRef} data-ticket-container="true" className="overflow-hidden rounded-sm shadow-2xl relative" style={{ margin: '0 auto' }}>
+             <div  
                 id="ticket-inner-container"
                 className="p-6 font-mono text-sm leading-relaxed relative"
                 style={{ 
