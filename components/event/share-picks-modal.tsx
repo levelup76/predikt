@@ -98,31 +98,54 @@ export default function SharePicksModal({
     }
   }
 
-  const handleCopy = async () => {
+  const handleCopy = () => {
     setIsGenerating(true)
-    try {
-        // Reuse generation logic (refactor later if needed)
-        // ... (Duplicate generation logic for now to ensure safety or refactor to single function)
-        // Ideally we split generateBlob out.
-        // For minimal diff, I will create a helper or just inline generation here too or make handleDownload mostly generic.
-        
-        // Let's refactor generation to a helper inside the component
-        const blob = await generateTicketBlob();
-        if (!blob) return;
+    
+    // Create the promise immediately
+    const blobPromise = generateTicketBlob().then(blob => {
+        if (!blob) throw new Error("Generálás sikertelen");
+        return blob;
+    });
 
-        await navigator.clipboard.write([
-            new ClipboardItem({
-                [blob.type]: blob
+    try {
+        // Use the Promise-based ClipboardItem approach for Safari support
+        // This keeps the user interaction context alive while generation happens async
+        const item = new ClipboardItem({
+            'image/png': blobPromise
+        });
+
+        navigator.clipboard.write([item])
+            .then(() => {
+                setIsCopied(true);
+                setTimeout(() => setIsCopied(false), 3000);
             })
-        ]);
-        
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 3000);
+            .catch((err) => {
+                console.error('Copy failed (async)', err);
+                alert('Nem sikerült a vágólapra másolni. Lehet, hogy a böngésződ nem támogatja ezt a funkciót.');
+            })
+            .finally(() => {
+                setIsGenerating(false);
+            });
+
     } catch (err) {
-        console.error('Copy failed', err);
-        alert('Nem sikerült a vágólapra másolni.');
-    } finally {
-        setIsGenerating(false);
+        // Fallback or initialization error
+        console.error('Copy setup failed', err);
+        // Try the old fashioned way if constructor fails (mostly for older browsers, though Safari is the main target here)
+        blobPromise.then(blob => {
+             if (!blob) return;
+             return navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+             ]);
+        })
+        .then(() => {
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 3000);
+        })
+        .catch(e => {
+            console.error('Legacy copy failed', e);
+             alert('Nem sikerült a vágólapra másolni.');
+        })
+        .finally(() => setIsGenerating(false));
     }
   }
 
