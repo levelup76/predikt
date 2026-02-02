@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://predikt.hu'),
   title: {
     default: "Predikt - Közösségi Tippjáték",
     template: "%s | Predikt"
