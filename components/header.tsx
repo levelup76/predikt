@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import AuthButton from './auth-button'
+import MobileMenu from './mobile-menu'
 import { PlusCircle } from 'lucide-react'
 import Image from 'next/image'
 
@@ -11,7 +12,7 @@ export default async function Header() {
   return (
     <header className="flex items-center justify-between p-4 border-b-2 border-black dark:border-white bg-white dark:bg-gray-900 sticky top-0 z-50">
       <div className="flex items-center gap-6">
-        <Link href="/" className="font-black text-2xl tracking-tighter uppercase flex items-center gap-3 hover:bg-yellow-400 transition-colors px-2 -ml-2">
+        <Link href="/" className="font-black text-2xl tracking-tighter uppercase flex items-center gap-3 hover:bg-yellow-400 transition-colors px-2 -ml-2 z-50 relative">
           {/* Use logo.png if available, fallback to emoji if fails (would need client side check) */}
           <div className="relative w-10 h-10">
              <Image 
@@ -49,6 +50,7 @@ export default async function Header() {
           </Link>
         )}
         <AuthButton user={user} />
+        <MobileMenu user={user} />
       </div>
     </header>
   )
