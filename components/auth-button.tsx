@@ -3,10 +3,26 @@
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
 export default function AuthButton({ user }: { user: User | null }) {
   const router = useRouter()
   const supabase = createClient()
+
+  useEffect(() => {
+    // Sync server state with client state
+    // This handles the case where the user is logged in (via cookies) but the initial server render didn't catch it yet
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && !user) {
+        router.refresh()
+      }
+      if (event === 'SIGNED_OUT' && user) {
+        router.refresh()
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase, router, user])
 
   const handleLogin = async () => {
     await supabase.auth.signInWithOAuth({
