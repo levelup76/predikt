@@ -230,14 +230,23 @@ export default function SharePicksModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
-      <div className="w-full max-w-md relative">
+    <div 
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto cursor-pointer"
+        onClick={onClose}
+    >
+      <div 
+        className="w-full max-w-md relative cursor-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
          <button 
+            type="button"
             onClick={onClose}
-            className="fixed right-4 top-4 z-[60] text-white hover:text-yellow-400 transition-colors md:absolute md:-right-12 md:-top-2"
+            className="fixed right-4 top-4 z-[70] text-white hover:text-yellow-400 transition-colors md:absolute md:-right-12 md:-top-2 p-2"
+            aria-label="Bezárás"
          >
             <X className="w-8 h-8" />
          </button>
+
 
          {/* Controls - Sticky Header */}
          <div className="sticky top-0 z-50 py-4 mb-2 flex flex-col items-center justify-center backdrop-blur-md bg-black/40 rounded-b-xl border-b border-white/10 shadow-lg">
