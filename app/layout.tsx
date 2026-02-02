@@ -15,8 +15,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Predikt - Közösségi Tippjáték",
+  title: {
+    default: "Predikt - Közösségi Tippjáték",
+    template: "%s | Predikt"
+  },
   description: "Tippelj eseményekre és oszd meg eredményeiket barátaiddal. Semmi kockázat, csak dicsőség.",
+  openGraph: {
+    title: "Predikt - Közösségi Tippjáték",
+    description: "Tippelj eseményekre és oszd meg eredményeiket barátaiddal.",
+    url: 'https://predikt.hu', // Cseréld le a végleges domainre, ha van
+    siteName: 'Predikt',
+    locale: 'hu_HU',
+    type: 'website',
+  },
   icons: {
     icon: [
       { url: '/favicon-32x32.png', type: 'image/png', sizes: '32x32' },
