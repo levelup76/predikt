@@ -350,8 +350,25 @@ export async function deleteEventAdminAction(formData: FormData) {
     revalidatePath('/admin')
     revalidatePath('/')
     return { success: true }
+  }
 
-// Move toggleUserBanAction to a server-only file or API route. It cannot be imported by client components.
+  export async function toggleUserBanAction(formData: FormData) {
+  const userId = formData.get('id') as string;
+  if (!userId) {
+    return { error: 'Missing user ID' };
+  }
+  const supabase = await createClient();
+  // Fetch current ban status
+  const { data: profile, error } = await supabase.from('profiles').select('is_banned').eq('id', userId).single();
+  if (error) {
+    return { error: 'User lookup failed' };
+  }
+  const newStatus = !profile?.is_banned;
+  const { error: updateError } = await supabase.from('profiles').update({ is_banned: newStatus }).eq('id', userId);
+  if (updateError) {
+    return { error: 'Update failed' };
+  }
+  return { success: true, is_banned: newStatus };
 }
 
 export async function submitReportAction(eventId: string, reason: string) {
