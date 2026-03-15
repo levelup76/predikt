@@ -351,8 +351,6 @@ export async function deleteEventAdminAction(formData: FormData) {
     revalidatePath('/')
     return { success: true }
 
-// Restore Event (Admin or Owner)
-
 export async function toggleUserBanAction(formData: FormData) {
     const userId = formData.get('id') as string;
     const supabase = await createClient()
