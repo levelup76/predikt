@@ -27,7 +27,11 @@ export default async function MyEventsPage() {
         predictions:predictions(count)
     `)
     .eq('creator_id', user.id)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false });
+    
+    // Exclude soft-deleted events
+    // Note: Supabase query builder executes in order; move filter before order
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">

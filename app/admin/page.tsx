@@ -21,10 +21,11 @@ export default async function SuperAdminPage() {
         return redirect("/");
     }
 
-    // Fetch all events
+    // Fetch all events (exclude soft-deleted)
     const { data: events, error: eventsError } = await supabase
         .from("events")
         .select("*")
+        .is('deleted_at', null)
         .order("created_at", { ascending: false });
 
     // Fetch all profiles
