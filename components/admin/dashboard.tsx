@@ -12,306 +12,12 @@ type Event = any // TODO: Proper types.
 
 export default function AdminDashboard({ event }: { event: Event }) {
     const supabase = createClient()
-    const router = useRouter()
-    
-    // Status management
-    const [status, setStatus] = useState(event.status)
-    const [visibility, setVisibility] = useState(event.visibility || 'public')
-    const [isUpdating, setIsUpdating] = useState(false)
-    const [isDeleting, setIsDeleting] = useState(false)
-    const [isRestoring, setIsRestoring] = useState(false)
-    const [activeTab, setActiveTab] = useState<'status' | 'edit' | 'results' | 'users' | 'audit'>('status')
-    const [auditLogs, setAuditLogs] = useState<any[]>([])
-    const [notifications, setNotifications] = useState<any[]>(event.notifications || [])
-
-    // DETAILS FORM
-    const { register: registerDetails, handleSubmit: handleSubmitDetails, formState: { errors: detailsErrors } } = useForm({
-        defaultValues: {
-            title: event.title,
-            description: event.description,
-            category: event.category,
-            lock_at: event.lock_at ? new Date(event.lock_at).toISOString().slice(0, 16) : '',
-            source_url: event.source_url || ''
-        }
-    })
-
-    const onUpdateDetails = async (data: any) => {
-        setIsUpdating(true)
-        const res = await updateEventDetailsAction(event.id, data)
-        setIsUpdating(false)
-        if (res.error) {
-            alert(res.error)
-        } else {
-            alert('Sikeres mentés!')
-            router.refresh()
-        }
-    }
-
-    // RESULTS FORM
-    const { register, control, handleSubmit, formState: { errors } } = useForm({
-        defaultValues: {
-            results: event.result_json || {}
-        }
-    })
-
-    const updateStatus = async (newStatus: string) => {
-        setIsUpdating(true)
-        const { error } = await supabase
-            .from('events')
-            .update({ status: newStatus })
-            .eq('id', event.id)
-        
-        setIsUpdating(false)
-        if (error) {
-            alert('Hiba történt: ' + error.message)
-        } else {
-            setStatus(newStatus)
-            router.refresh()
-        }
-    }
-
-    // Visibility toggle
-    const updateVisibility = async (newVisibility: string) => {
-        setIsUpdating(true)
-        const { error } = await supabase
-            .from('events')
-            .update({ visibility: newVisibility })
-            .eq('id', event.id)
-        setIsUpdating(false)
-        if (error) {
-            alert('Hiba történt: ' + error.message)
-        } else {
-            setVisibility(newVisibility)
-            // Audit log
-            await supabase.from('event_audit_logs').insert({
-                event_id: event.id,
-                user_id: event.creator_id,
-                action: 'visibility_change',
-                details: { visibility: newVisibility },
-                created_at: new Date().toISOString()
-            })
-            router.refresh()
-        }
-    }
-
-    // Restore event
-    const restoreEvent = async () => {
-        setIsRestoring(true)
-        const res = await supabase.rpc('restore_event', { event_id: event.id })
-        setIsRestoring(false)
-        if (res.error) {
-            alert(res.error)
-        } else {
-            alert('Esemény visszaállítva!')
-            router.refresh()
-        }
-    }
-
-    // Fetch audit logs
-    const fetchAuditLogs = async () => {
-        const { data, error } = await supabase
-            .from('event_audit_logs')
-            .select('*')
-            .eq('event_id', event.id)
-            .order('created_at', { ascending: false })
-        if (!error) setAuditLogs(data)
-    }
-
-    // Dismiss notification
-    const dismissNotification = async (notificationId: string) => {
-        await supabase.from('notifications').update({ dismissed: true }).eq('id', notificationId)
-        setNotifications(notifications.filter(n => n.id !== notificationId))
-    }
-
-    const handleDelete = async () => {
-        if (!confirm('BIZTOSAN TÖRÖLNI SZERETNÉD? Ez a művelet nem visszavonható! Minden tipp és adat elvész.')) {
-            return
-        }
-        
-        setIsDeleting(true)
-        const res = await deleteEventAction(event.id)
-        
-        if (res.success) {
-            alert('Esemény törölve.')
-            router.push('/my-events')
-        } else {
-            alert(res.error)
-            setIsDeleting(false)
-        }
-    }
-
-    const onSaveResults = async (data: any) => {
-        setIsUpdating(true);
-        
-        // 1. Save Event Results (for future reference and display)
-        const { error: eventError } = await supabase
-            .from('events')
-            .update({ 
-                result_json: data.results,
-                // Optionally auto-reveal if not already
-                status: status === 'locked' ? 'revealed' : status 
-            })
-            .eq('id', event.id)
-
-        if (eventError) {
-             alert('Hiba a mentésnél: ' + eventError.message)
-             setIsUpdating(false)
-             return
-        }
-        
-        // 2. Calculate Points for all Predictions
-        // MVP: Client-side calculation (simplest for now) or Server Action?
-        // Let's call a Server Action to be safe and robust.
-        // But we don't have it yet. Let's do a client-side loop for the MVP mock.
-        
-        const predictions = event.predictions || []
-        const markets = event.markets || []
-        
-        const updates = predictions.map((pred: any) => {
-            let points = 0
-            const picks = pred.picks_json || {}
-            
-            markets.forEach((market: any) => {
-               const correct = data.results[market.id]
-               const userPick = picks[market.id]
-               
-               if (!correct || !userPick) return
-               
-               if (market.type === 'score') {
-                   // Correct is object { "optionId": "3", ... }, UserPick is { "optionId": "3" }
-                   // Check exact match for all fields
-                   let allMatch = true
-                   Object.keys(correct).forEach(optId => {
-                       if (correct[optId] !== userPick[optId]) allMatch = false
-                   })
-                   if (allMatch) points += 3 // 3 points for exact score?
-               } else {
-                   // Select
-                   if (userPick === correct) points += 1
-               }
-            })
-            
-            return {
-                id: pred.id,
-                points: points
-            }
-        })
-        
-        if (updates.length > 0) {
-            const { error: scoreError } = await supabase
-                .from('predictions')
-                .upsert(updates)
-             
-            if (scoreError) console.error('Score update failed', scoreError)
-        }
-
-        setIsUpdating(false)
-        alert('Eredmények mentve és pontok kiszámolva!')
-        router.refresh()
-    }
-
-    return (
-        <div className="space-y-8">
-            {/* Notifications */}
-            {notifications.length > 0 && (
-                <div className="mb-4">
-                    {notifications.map(n => (
-                        <div key={n.id} className="bg-yellow-100 border-2 border-yellow-600 p-4 mb-2 flex justify-between items-center">
-                            <span>{n.message}</span>
-                            <button onClick={() => dismissNotification(n.id)} className="ml-4 px-3 py-1 bg-yellow-600 text-white font-bold rounded">Bezár</button>
-                        </div>
-                    ))}
-                </div>
-            )}
-            {/* TABS */}
-            <div className="flex border-b-2 border-black dark:border-white mb-6">
-                <button 
-                  onClick={() => setActiveTab('status')}
-                  className={`px-4 py-3 font-black text-sm uppercase tracking-tight border-r-2 border-black dark:border-white transition-colors hover:bg-yellow-400 hover:text-black ${activeTab === 'status' ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-transparent text-gray-500'}`}
-                >
-                    <div className="flex items-center gap-2">
-                        <Globe className="w-4 h-4" />
-                        Státusz
-                    </div>
-                </button>
-                <button 
-                  onClick={() => setActiveTab('users')}
-                  className={`hidden sm:block px-4 py-3 font-black text-sm uppercase tracking-tight border-r-2 border-black dark:border-white transition-colors hover:bg-yellow-400 hover:text-black ${activeTab === 'users' ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-transparent text-gray-500'}`}
-                >
-                    <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4" />
-                        Játékosok
-                    </div>
-                </button>
-                <button 
-                  onClick={() => setActiveTab('edit')}
-                  className={`px-4 py-3 font-black text-sm uppercase tracking-tight border-r-2 border-black dark:border-white transition-colors hover:bg-yellow-400 hover:text-black ${activeTab === 'edit' ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-transparent text-gray-500'}`}
-                >
-                    <div className="flex items-center gap-2">
-                        <Edit3 className="w-4 h-4" />
-                        Szerkesztés
-                    </div>
-                </button>
-                <button 
-                  onClick={() => setActiveTab('results')}
-                  className={`px-4 py-3 font-black text-sm uppercase tracking-tight border-r-2 border-black dark:border-white transition-colors hover:bg-yellow-400 hover:text-black ${activeTab === 'results' ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-transparent text-gray-500'}`}
-                >
-                    <div className="flex items-center gap-2">
-                        <Trophy className="w-4 h-4" />
-                        Eredmények
-                    </div>
-                </button>
-            </div>
-
-            {/* 1. Status Control Panel */}
-            {activeTab === 'status' && (
-            <section className="bg-white dark:bg-black p-6 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
-                <h2 className="text-xl font-black uppercase mb-6 flex items-center">
-                    <Globe className="w-5 h-5 mr-2" />
-                    Státusz Kezelés
-                </h2>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <button 
-                         onClick={() => updateStatus('draft')}
-                         disabled={isUpdating || status === 'draft'}
-                         className={`p-4 border-2 border-black dark:border-white text-sm font-black uppercase tracking-tight transition-all hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] ${status === 'draft' ? 'bg-gray-200 text-black cursor-default' : 'bg-white dark:bg-gray-900 text-gray-600 hover:bg-gray-50'}`}
-                    >
-                        Vázlat (Draft)
-                    </button>
-                    <button 
-                         onClick={() => updateStatus('open')}
-                         disabled={isUpdating || status === 'open'}
-                         className={`p-4 border-2 border-black dark:border-white text-sm font-black uppercase tracking-tight transition-all hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] ${status === 'open' ? 'bg-green-400 text-black cursor-default' : 'bg-white dark:bg-gray-900 text-gray-600 hover:bg-green-50'}`}
-                    >
-                        Nyitva (Open)
-                    </button>
-                    <button 
-                         onClick={() => updateStatus('locked')}
-                         disabled={isUpdating || status === 'locked'}
-                         className={`p-4 border-2 border-black dark:border-white text-sm font-black uppercase tracking-tight transition-all hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] ${status === 'locked' ? 'bg-orange-400 text-black cursor-default' : 'bg-white dark:bg-gray-900 text-gray-600 hover:bg-orange-50'}`}
-                    >
-                        Lezárva (Locked)
-                    </button>
-                    <button 
-                         onClick={() => updateStatus('revealed')}
-                         disabled={isUpdating || status === 'revealed'}
-                         className={`p-4 border-2 border-black dark:border-white text-sm font-black uppercase tracking-tight transition-all hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] ${status === 'revealed' ? 'bg-blue-400 text-black cursor-default' : 'bg-white dark:bg-gray-900 text-gray-600 hover:bg-blue-50'}`}
-                    >
-                        Kiértékelve (Revealed)
-                    </button>
-                </div>
-                <div className="mt-6 pt-4 border-t-2 border-black dark:border-white text-sm font-bold">
-                    Jelenlegi státusz: <span className="font-black uppercase bg-yellow-400 px-2 py-1 ml-2 border-2 border-black text-black">{status}</span>
-                    <div className="mt-4">
-                        <label className="font-black mr-2">Láthatóság:</label>
-                        <select value={visibility} onChange={e => updateVisibility(e.target.value)} className="border-2 border-black px-2 py-1">
                             <option value="public">Publikus</option>
                             <option value="private">Privát</option>
                         </select>
                     </div>
                 </div>
-                {event.deleted_at && (
+    import { useForm } from 'react-hook-form'
                     <div className="mt-4">
                         <button onClick={restoreEvent} disabled={isRestoring} className="px-4 py-2 bg-green-600 text-white font-bold border-2 border-black rounded">
                             {isRestoring ? 'Visszaállítás...' : 'Visszaállítás'}
@@ -319,130 +25,212 @@ export default function AdminDashboard({ event }: { event: Event }) {
                         <span className="ml-2 text-red-600 font-bold">Törölve: {new Date(event.deleted_at).toLocaleString()} (7 napig visszaállítható)</span>
                     </div>
                 )}
+        const router = useRouter();
                 </div>
             </section>
             )}
 
            {/* 2. Edit Section */}
-                    {/* Audit Log Tab */}
-                    {activeTab === 'audit' && (
-                        <section className="bg-white dark:bg-black p-6 border-2 border-black dark:border-white">
-                            <h2 className="text-xl font-black uppercase mb-6 flex items-center">
-                                <Settings className="w-5 h-5 mr-2" />
-                                Audit Log
-                            </h2>
-                            <button onClick={fetchAuditLogs} className="mb-4 px-4 py-2 bg-blue-600 text-white font-bold rounded">Frissítés</button>
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full border">
-                                    <thead>
-                                        <tr>
-                                            <th className="border px-2 py-1">Dátum</th>
-                                            <th className="border px-2 py-1">Felhasználó</th>
-                                            <th className="border px-2 py-1">Akció</th>
-                                            <th className="border px-2 py-1">Részletek</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {auditLogs.map(log => (
-                                            <tr key={log.id}>
-                                                <td className="border px-2 py-1">{new Date(log.created_at).toLocaleString()}</td>
-                                                <td className="border px-2 py-1">{log.user_id}</td>
-                                                <td className="border px-2 py-1">{log.action}</td>
-                                                <td className="border px-2 py-1">{JSON.stringify(log.details)}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </section>
-                    )}
+           {/* Audit Log Tab */}
+           {activeTab === 'audit' && (
+               <section className="bg-white dark:bg-black p-6 border-2 border-black dark:border-white">
+                   <h2 className="text-xl font-black uppercase mb-6 flex items-center">
+                       <Settings className="w-5 h-5 mr-2" />
+                       Audit Log
+                   </h2>
+                   <button onClick={fetchAuditLogs} className="mb-4 px-4 py-2 bg-blue-600 text-white font-bold rounded">Frissítés</button>
+                   <div className="overflow-x-auto">
+                       <table className="min-w-full border">
+                           <thead>
+                               <tr>
+                                   <th className="border px-2 py-1">Dátum</th>
+                                   <th className="border px-2 py-1">Felhasználó</th>
+                                   <th className="border px-2 py-1">Akció</th>
+                                   <th className="border px-2 py-1">Részletek</th>
+                               </tr>
+                           </thead>
+                           <tbody>
+                               {auditLogs.map(log => (
+                                   <tr key={log.id}>
+                                       <td className="border px-2 py-1">{new Date(log.created_at).toLocaleString()}</td>
+                                       <td className="border px-2 py-1">{log.user_id}</td>
+                                       <td className="border px-2 py-1">{log.action}</td>
+                                       <td className="border px-2 py-1">{JSON.stringify(log.details)}</td>
+                                   </tr>
+                               ))}
+                           </tbody>
+                       </table>
+                   </div>
+               </section>
+           )}
            {activeTab === 'edit' && (
                <section className="space-y-6">
                    <div className="bg-white dark:bg-black p-6 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
                        <h2 className="text-xl font-black uppercase mb-6 flex items-center">
                            <Settings className="w-5 h-5 mr-2" />
-                           Alapadatok Módosítása
-                       </h2>
-                       <form onSubmit={handleSubmitDetails(onUpdateDetails)} className="space-y-6 max-w-2xl">
-                           <div>
-                               <label className="block text-sm font-black uppercase mb-2">Esemény Címe</label>
-                               <input {...registerDetails('title')} className="w-full p-3 border-2 border-black dark:border-white bg-transparent rounded-none focus:ring-0 focus:outline-none focus:bg-yellow-50 dark:focus:bg-gray-900 font-bold" />
-                           </div>
-                           <div>
-                               <label className="block text-sm font-black uppercase mb-2">Leírás</label>
-                               <textarea {...registerDetails('description')} className="w-full p-3 border-2 border-black dark:border-white bg-transparent rounded-none focus:ring-0 focus:outline-none focus:bg-yellow-50 dark:focus:bg-gray-900 font-bold" rows={3}></textarea>
-                           </div>
-                           <div className="grid grid-cols-2 gap-4">
-                               <div>
-                                   <label className="block text-sm font-black uppercase mb-2">Kategória</label>
-                                   <div className="border-2 border-black dark:border-white bg-white dark:bg-black">
-                                      <select {...registerDetails('category')} className="w-full p-3 bg-transparent border-none focus:outline-none font-bold appearance-none">
-                                       <option value="sport">Sport</option>
-                                       <option value="politics">Politika / Közélet</option>
-                                       <option value="awards">Díjak / Gálák</option>
-                                       <option value="other">Egyéb</option>
-                                   </select>
-                                   </div>
-                               </div>
-                               <div>
-                                   <label className="block text-sm font-black uppercase mb-2">Lezárás Dátuma</label>
-                                   <input type="datetime-local" {...registerDetails('lock_at')} className="w-full p-3 border-2 border-black dark:border-white bg-transparent rounded-none focus:ring-0 focus:outline-none focus:bg-yellow-50 dark:focus:bg-gray-900 font-bold" />
-                               </div>
-                           </div>
-                           <div>
-                               <label className="block text-sm font-black uppercase mb-2">Forrás URL (opcionális)</label>
-                               <input {...registerDetails('source_url')} className="w-full p-3 border-2 border-black dark:border-white bg-transparent rounded-none focus:ring-0 focus:outline-none focus:bg-yellow-50 dark:focus:bg-gray-900 font-bold" />
-                           </div>
-                           <button 
-                             type="submit" 
-                             disabled={isUpdating || ['locked', 'revealed'].includes(status)}
-                             className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-black uppercase px-6 py-3 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                           >
-                             {isUpdating ? 'Mentés...' : 'Változások Mentése'}
-                           </button>
-                           {['locked', 'revealed'].includes(status) && <p className="text-sm font-bold text-red-600 mt-2 p-2 border-2 border-red-600 inline-block">LEZÁRT ESEMÉNY NEM SZERKESZTHETŐ.</p>}
-                       </form>
-                   </div>
-
-                   <div className="bg-white dark:bg-black p-6 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
-                       <h2 className="text-xl font-black uppercase mb-6 flex items-center">
-                           <Edit3 className="w-5 h-5 mr-2" />
-                           Kérdések Szerkesztése
-                       </h2>
-                       <p className="text-sm font-medium mb-6">
-                           A kérdések szerkesztésére a varázsló felületét használhatod.
-                           <br />
-                           <strong className="bg-yellow-400 px-1 text-black">FIGYELEM:</strong> Ha már érkezett szavazat, a kérdések nem módosíthatók!
-                       </p>
-                       
-                       <Link 
-                          href={`/create/${event.id}/markets`}
-                          className="inline-flex items-center px-6 py-3 border-2 border-black dark:border-white bg-white dark:bg-black text-black dark:text-white font-black uppercase hover:bg-gray-100 dark:hover:bg-gray-900 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
-                       >
-                           <Edit3 className="w-4 h-4 mr-2" />
-                           Kérdések szerkesztő megnyitása
-                       </Link>
-                   </div>
-
-                    {/* DANGER ZONE */}
-                    <div className="bg-red-50 dark:bg-red-900/20 p-6 border-2 border-red-500 shadow-[4px_4px_0px_0px_rgba(239,68,68,1)]">
-                       <h2 className="text-xl font-black uppercase mb-4 flex items-center text-red-600 dark:text-red-400">
-                           <AlertTriangle className="w-5 h-5 mr-2" />
-                           Veszélyzóna
-                       </h2>
-                       <p className="text-sm font-bold text-red-800 dark:text-red-200 mb-6">
-                           Az esemény törlése végleges. Nem vonható vissza.
-                       </p>
-                       
-                       <button 
-                          onClick={handleDelete}
-                          disabled={isDeleting}
-                          className="inline-flex items-center px-6 py-3 border-2 border-red-600 bg-red-600 text-white font-black uppercase hover:bg-red-700 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
-                       >
-                           {isDeleting ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
-                           {isDeleting ? 'Törlés...' : 'Esemény Törlése'}
-                       </button>
-                   </div>
+                        // Main JSX
+                        return (
+                            <div className="space-y-8">
+                                {/* Notifications */}
+                                {notifications.length > 0 && (
+                                    <div className="mb-4">
+                                        {notifications.map(n => (
+                                            <div key={n.id} className="bg-yellow-100 border-2 border-yellow-600 p-4 mb-2 flex justify-between items-center">
+                                                <span>{n.message}</span>
+                                                <button onClick={() => dismissNotification(n.id)} className="ml-4 px-3 py-1 bg-yellow-600 text-white font-bold rounded">Bezár</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                {/* TABS */}
+                                <div className="flex border-b-2 border-black dark:border-white mb-6">
+                                    <button onClick={() => setActiveTab("status")} className={`px-4 py-3 font-black text-sm uppercase tracking-tight border-r-2 border-black dark:border-white transition-colors hover:bg-yellow-400 hover:text-black ${activeTab === "status" ? "bg-black text-white dark:bg-white dark:text-black" : "bg-transparent text-gray-500"}`}>
+                                        <div className="flex items-center gap-2"><Globe className="w-4 h-4" />Státusz</div>
+                                    </button>
+                                    <button onClick={() => setActiveTab("users")} className={`hidden sm:block px-4 py-3 font-black text-sm uppercase tracking-tight border-r-2 border-black dark:border-white transition-colors hover:bg-yellow-400 hover:text-black ${activeTab === "users" ? "bg-black text-white dark:bg-white dark:text-black" : "bg-transparent text-gray-500"}`}>
+                                        <div className="flex items-center gap-2"><Users className="w-4 h-4" />Játékosok</div>
+                                    </button>
+                                    <button onClick={() => setActiveTab("edit")} className={`px-4 py-3 font-black text-sm uppercase tracking-tight border-r-2 border-black dark:border-white transition-colors hover:bg-yellow-400 hover:text-black ${activeTab === "edit" ? "bg-black text-white dark:bg-white dark:text-black" : "bg-transparent text-gray-500"}`}>
+                                        <div className="flex items-center gap-2"><Edit3 className="w-4 h-4" />Szerkesztés</div>
+                                    </button>
+                                    <button onClick={() => setActiveTab("results")} className={`px-4 py-3 font-black text-sm uppercase tracking-tight border-r-2 border-black dark:border-white transition-colors hover:bg-yellow-400 hover:text-black ${activeTab === "results" ? "bg-black text-white dark:bg-white dark:text-black" : "bg-transparent text-gray-500"}`}>
+                                        <div className="flex items-center gap-2"><Trophy className="w-4 h-4" />Eredmények</div>
+                                    </button>
+                                    <button onClick={() => setActiveTab("audit")} className={`px-4 py-3 font-black text-sm uppercase tracking-tight transition-colors hover:bg-yellow-400 hover:text-black ${activeTab === "audit" ? "bg-black text-white dark:bg-white dark:text-black" : "bg-transparent text-gray-500"}`}>
+                                        <div className="flex items-center gap-2"><Settings className="w-4 h-4" />Audit Log</div>
+                                    </button>
+                                </div>
+                                {/* 1. Status Control Panel */}
+                                {activeTab === "status" && (
+                                    <section className="bg-white dark:bg-black p-6 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+                                        <h2 className="text-xl font-black uppercase mb-6 flex items-center"><Globe className="w-5 h-5 mr-2" />Státusz Kezelés</h2>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <button onClick={() => updateStatus('draft')} disabled={isUpdating || status === 'draft'} className={`p-4 border-2 border-black dark:border-white text-sm font-black uppercase tracking-tight transition-all ${status === 'draft' ? 'bg-gray-200 text-black cursor-default' : 'bg-white dark:bg-gray-900 text-gray-600 hover:bg-gray-50'}`}>Vázlat (Draft)</button>
+                                            <button onClick={() => updateStatus('open')} disabled={isUpdating || status === 'open'} className={`p-4 border-2 border-black dark:border-white text-sm font-black uppercase tracking-tight transition-all ${status === 'open' ? 'bg-green-400 text-black cursor-default' : 'bg-white dark:bg-gray-900 text-gray-600 hover:bg-green-50'}`}>Nyitva (Open)</button>
+                                            <button onClick={() => updateStatus('locked')} disabled={isUpdating || status === 'locked'} className={`p-4 border-2 border-black dark:border-white text-sm font-black uppercase tracking-tight transition-all ${status === 'locked' ? 'bg-orange-400 text-black cursor-default' : 'bg-white dark:bg-gray-900 text-gray-600 hover:bg-orange-50'}`}>Lezárva (Locked)</button>
+                                            <button onClick={() => updateStatus('revealed')} disabled={isUpdating || status === 'revealed'} className={`p-4 border-2 border-black dark:border-white text-sm font-black uppercase tracking-tight transition-all ${status === 'revealed' ? 'bg-blue-400 text-black cursor-default' : 'bg-white dark:bg-gray-900 text-gray-600 hover:bg-blue-50'}`}>Kiértékelve (Revealed)</button>
+                                        </div>
+                                        <div className="mt-6 pt-4 border-t-2 border-black dark:border-white text-sm font-bold">
+                                            Jelenlegi státusz: <span className="font-black uppercase bg-yellow-400 px-2 py-1 ml-2 border-2 border-black text-black">{status}</span>
+                                            <div className="mt-4">
+                                                <label className="font-black mr-2">Láthatóság:</label>
+                                                <select value={visibility} onChange={e => updateVisibility(e.target.value)} className="border-2 border-black px-2 py-1">
+                                                    <option value="public">Publikus</option>
+                                                    <option value="private">Privát</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        {event.deleted_at && (
+                                            <div className="mt-4">
+                                                <button onClick={restoreEvent} disabled={isRestoring} className="px-4 py-2 bg-green-600 text-white font-bold border-2 border-black rounded">
+                                                    {isRestoring ? 'Visszaállítás...' : 'Visszaállítás'}
+                                                </button>
+                                                <span className="ml-2 text-red-600 font-bold">Törölve: {new Date(event.deleted_at).toLocaleString()} (7 napig visszaállítható)</span>
+                                            </div>
+                                        )}
+                                    </section>
+                                )}
+                                {/* 2. Edit Section */}
+                                {activeTab === "edit" && (
+                                    <section className="space-y-6">
+                                        <div className="bg-white dark:bg-black p-6 border-2 border-black dark:border-white shadow">
+                                            <h2 className="text-xl font-black uppercase mb-6 flex items-center"><Settings className="w-5 h-5 mr-2" />Alapadatok Módosítása</h2>
+                                            <form onSubmit={handleSubmitDetails(data => updateEventDetailsAction(event.id, data))} className="space-y-6 max-w-2xl">
+                                                <div>
+                                                    <label className="block text-sm font-black uppercase mb-2">Esemény Címe</label>
+                                                    <input {...registerDetails('title')} className="w-full p-3 border-2 border-black dark:border-white bg-transparent rounded-none font-bold" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-black uppercase mb-2">Leírás</label>
+                                                    <textarea {...registerDetails('description')} className="w-full p-3 border-2 border-black dark:border-white bg-transparent rounded-none font-bold" rows={3}></textarea>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-black uppercase mb-2">Kategória</label>
+                                                        <select {...registerDetails('category')} className="w-full p-3 bg-transparent border-none font-bold">
+                                                            <option value="sport">Sport</option>
+                                                            <option value="politics">Politika / Közélet</option>
+                                                            <option value="awards">Díjak / Gálák</option>
+                                                            <option value="other">Egyéb</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-black uppercase mb-2">Lezárás Dátuma</label>
+                                                        <input type="datetime-local" {...registerDetails('lock_at')} className="w-full p-3 border-2 border-black dark:border-white bg-transparent rounded-none font-bold" />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-black uppercase mb-2">Forrás URL (opcionális)</label>
+                                                    <input {...registerDetails('source_url')} className="w-full p-3 border-2 border-black dark:border-white bg-transparent rounded-none font-bold" />
+                                                </div>
+                                                <button type="submit" disabled={isUpdating} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-black uppercase px-6 py-3 border-2 border-black dark:border-white shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                                    {isUpdating ? 'Mentés...' : 'Változások Mentése'}
+                                                </button>
+                                            </form>
+                                        </div>
+                                        <div className="bg-white dark:bg-black p-6 border-2 border-black dark:border-white shadow">
+                                            <h2 className="text-xl font-black uppercase mb-6 flex items-center"><Edit3 className="w-5 h-5 mr-2" />Kérdések Szerkesztése</h2>
+                                            <p className="text-sm font-medium mb-6">A kérdések szerkesztésére a varázsló felületét használhatod.<br /><strong className="bg-yellow-400 px-1 text-black">FIGYELEM:</strong> Ha már érkezett szavazat, a kérdések nem módosíthatók!</p>
+                                            <Link href={`/create/${event.id}/markets`} className="inline-flex items-center px-6 py-3 border-2 border-black dark:border-white bg-white dark:bg-black text-black dark:text-white font-black uppercase hover:bg-gray-100 dark:hover:bg-gray-900 transition-all shadow">
+                                                <Edit3 className="w-4 h-4 mr-2" />Kérdések szerkesztő megnyitása
+                                            </Link>
+                                        </div>
+                                        <div className="bg-red-50 dark:bg-red-900/20 p-6 border-2 border-red-500 shadow">
+                                            <h2 className="text-xl font-black uppercase mb-4 flex items-center text-red-600 dark:text-red-400"><AlertTriangle className="w-5 h-5 mr-2" />Veszélyzóna</h2>
+                                            <p className="text-sm font-bold text-red-800 dark:text-red-200 mb-6">Az esemény törlése végleges. Nem vonható vissza.</p>
+                                            <button onClick={() => deleteEventAction(event.id)} disabled={isDeleting} className="inline-flex items-center px-6 py-3 border-2 border-red-600 bg-red-600 text-white font-black uppercase hover:bg-red-700 transition-all shadow">
+                                                {isDeleting ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                                                {isDeleting ? 'Törlés...' : 'Esemény Törlése'}
+                                            </button>
+                                        </div>
+                                    </section>
+                                )}
+                                {/* 3. Audit Log Tab */}
+                                {activeTab === "audit" && (
+                                    <section className="bg-white dark:bg-black p-6 border-2 border-black dark:border-white">
+                                        <h2 className="text-xl font-black uppercase mb-6 flex items-center"><Settings className="w-5 h-5 mr-2" />Audit Log</h2>
+                                        <button onClick={fetchAuditLogs} className="mb-4 px-4 py-2 bg-blue-600 text-white font-bold rounded">Frissítés</button>
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full border">
+                                                <thead>
+                                                    <tr>
+                                                        <th className="border px-2 py-1">Dátum</th>
+                                                        <th className="border px-2 py-1">Felhasználó</th>
+                                                        <th className="border px-2 py-1">Akció</th>
+                                                        <th className="border px-2 py-1">Részletek</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {auditLogs.map(log => (
+                                                        <tr key={log.id}>
+                                                            <td className="border px-2 py-1">{new Date(log.created_at).toLocaleString()}</td>
+                                                            <td className="border px-2 py-1">{log.user_id}</td>
+                                                            <td className="border px-2 py-1">{log.action}</td>
+                                                            <td className="border px-2 py-1">{JSON.stringify(log.details)}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </section>
+                                )}
+                                {/* 4. Results Tab */}
+                                {activeTab === "results" && (
+                                    <section className="bg-white dark:bg-black p-6 border-2 border-black dark:border-white">
+                                        <h2 className="text-xl font-black uppercase mb-6 flex items-center"><Trophy className="w-5 h-5 mr-2" />Eredmények Rögzítése</h2>
+                                        <p className="text-sm font-bold mb-6 flex items-center bg-yellow-400 border-2 border-black p-3 text-black inline-block"><UserCheck className="w-4 h-4 mr-2" />Itt rögzítheted a helyes válaszokat / végeredményt. Mentéskor a rendszer automatikusan kalkulál.</p>
+                                        {/* Results form and scoring UI would go here */}
+                                    </section>
+                                )}
+                                {/* 5. Users Tab */}
+                                {activeTab === "users" && (
+                                    <section className="bg-white dark:bg-black p-6 border-2 border-black dark:border-white">
+                                        <h2 className="text-xl font-black uppercase mb-6 flex items-center"><Users className="w-5 h-5 mr-2" />Játékosok</h2>
+                                        {/* User list and admin actions would go here */}
+                                    </section>
+                                )}
+                            </div>
+                        );
                </section>
            )}
 
