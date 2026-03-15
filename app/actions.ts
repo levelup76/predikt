@@ -352,7 +352,7 @@ export async function deleteEventAdminAction(formData: FormData) {
     return { success: true }
 
 // Restore Event (Admin or Owner)
-// Move this logic to a dedicated server action file or API route, not imported by client components.
+// (Restore logic should be implemented in a server action or API route, not here if imported by client components.)
 
 export async function toggleUserBanAction(formData: FormData) {
     const userId = formData.get('id') as string;
