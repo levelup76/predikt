@@ -8,7 +8,7 @@ import { useFieldArray, useForm } from 'react-hook-form'
 import Link from 'next/link'
 import { updateEventDetailsAction, deleteEventAction } from '@/app/actions' // Adjust path if needed
 
-type Event = any // TODO: Proper types
+type Event = any // TODO: Proper types.
 
 export default function AdminDashboard({ event }: { event: Event }) {
     const supabase = createClient()
