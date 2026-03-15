@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 
-export default function AdminDashboard({ event }) {
+export default function AdminDashboard({ event }: { event: any }) {
     const [activeTab, setActiveTab] = useState('status');
     return (
         <div className="space-y-8">
