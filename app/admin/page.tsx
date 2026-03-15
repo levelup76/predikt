@@ -1,7 +1,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { deleteEventAdminAction } from "../actions";
+import { deleteEventAdminAction, toggleUserBanAction } from "../actions";
 import { DeleteEventButton } from "@/components/admin/delete-event-button";
 
 export default async function SuperAdminPage() {
