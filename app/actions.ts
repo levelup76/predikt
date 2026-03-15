@@ -351,38 +351,7 @@ export async function deleteEventAdminAction(formData: FormData) {
     revalidatePath('/')
     return { success: true }
 
-export async function toggleUserBanAction(formData: FormData) {
-    const userId = formData.get('id') as string;
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user || !user.email || !ADMIN_EMAILS.includes(user.email)) {
-        return { error: 'Unauthorized' }
-    }
-    
-    // Check if is_banned column exists by fetching first
-    // Since we don't have is_banned in schema yet, we might error out.
-    // For this MVP, we will try to update 'is_banned'. 
-    // IF THIS FAILS, the user needs to run SQL.
-    
-    // First, let's check current status
-    const { data: profile } = await supabase.from('profiles').select('is_banned').eq('id', userId).single()
-    
-    // If column doesn't exist, this might just return null or error. 
-    // If it errors, we can't do much.
-    
-    const newStatus = !(profile?.is_banned)
-    
-    const { error } = await supabase.from('profiles').update({ is_banned: newStatus }).eq('id', userId)
-    
-    if (error) {
-        console.error('Ban failed:', error)
-        // Fallback: If column missing? 
-        return { error: 'Tiltás sikertelen (Hiányzó is_banned oszlop?): ' + error.message }
-    }
-    
-    revalidatePath('/admin')
-    return { success: true }
+// Move toggleUserBanAction to a server-only file or API route. It cannot be imported by client components.
 }
 
 export async function submitReportAction(eventId: string, reason: string) {
