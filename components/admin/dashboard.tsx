@@ -16,9 +16,13 @@ export default function AdminDashboard({ event }: { event: Event }) {
     
     // Status management
     const [status, setStatus] = useState(event.status)
+    const [visibility, setVisibility] = useState(event.visibility || 'public')
     const [isUpdating, setIsUpdating] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
-    const [activeTab, setActiveTab] = useState<'status' | 'edit' | 'results' | 'users'>('status')
+    const [isRestoring, setIsRestoring] = useState(false)
+    const [activeTab, setActiveTab] = useState<'status' | 'edit' | 'results' | 'users' | 'audit'>('status')
+    const [auditLogs, setAuditLogs] = useState<any[]>([])
+    const [notifications, setNotifications] = useState<any[]>(event.notifications || [])
 
     // DETAILS FORM
     const { register: registerDetails, handleSubmit: handleSubmitDetails, formState: { errors: detailsErrors } } = useForm({
@@ -64,6 +68,59 @@ export default function AdminDashboard({ event }: { event: Event }) {
             setStatus(newStatus)
             router.refresh()
         }
+    }
+
+    // Visibility toggle
+    const updateVisibility = async (newVisibility: string) => {
+        setIsUpdating(true)
+        const { error } = await supabase
+            .from('events')
+            .update({ visibility: newVisibility })
+            .eq('id', event.id)
+        setIsUpdating(false)
+        if (error) {
+            alert('Hiba történt: ' + error.message)
+        } else {
+            setVisibility(newVisibility)
+            // Audit log
+            await supabase.from('event_audit_logs').insert({
+                event_id: event.id,
+                user_id: event.creator_id,
+                action: 'visibility_change',
+                details: { visibility: newVisibility },
+                created_at: new Date().toISOString()
+            })
+            router.refresh()
+        }
+    }
+
+    // Restore event
+    const restoreEvent = async () => {
+        setIsRestoring(true)
+        const res = await supabase.rpc('restore_event', { event_id: event.id })
+        setIsRestoring(false)
+        if (res.error) {
+            alert(res.error)
+        } else {
+            alert('Esemény visszaállítva!')
+            router.refresh()
+        }
+    }
+
+    // Fetch audit logs
+    const fetchAuditLogs = async () => {
+        const { data, error } = await supabase
+            .from('event_audit_logs')
+            .select('*')
+            .eq('event_id', event.id)
+            .order('created_at', { ascending: false })
+        if (!error) setAuditLogs(data)
+    }
+
+    // Dismiss notification
+    const dismissNotification = async (notificationId: string) => {
+        await supabase.from('notifications').update({ dismissed: true }).eq('id', notificationId)
+        setNotifications(notifications.filter(n => n.id !== notificationId))
     }
 
     const handleDelete = async () => {
@@ -155,6 +212,17 @@ export default function AdminDashboard({ event }: { event: Event }) {
 
     return (
         <div className="space-y-8">
+            {/* Notifications */}
+            {notifications.length > 0 && (
+                <div className="mb-4">
+                    {notifications.map(n => (
+                        <div key={n.id} className="bg-yellow-100 border-2 border-yellow-600 p-4 mb-2 flex justify-between items-center">
+                            <span>{n.message}</span>
+                            <button onClick={() => dismissNotification(n.id)} className="ml-4 px-3 py-1 bg-yellow-600 text-white font-bold rounded">Bezár</button>
+                        </div>
+                    ))}
+                </div>
+            )}
             {/* TABS */}
             <div className="flex border-b-2 border-black dark:border-white mb-6">
                 <button 
@@ -235,11 +303,59 @@ export default function AdminDashboard({ event }: { event: Event }) {
                 </div>
                 <div className="mt-6 pt-4 border-t-2 border-black dark:border-white text-sm font-bold">
                     Jelenlegi státusz: <span className="font-black uppercase bg-yellow-400 px-2 py-1 ml-2 border-2 border-black text-black">{status}</span>
+                    <div className="mt-4">
+                        <label className="font-black mr-2">Láthatóság:</label>
+                        <select value={visibility} onChange={e => updateVisibility(e.target.value)} className="border-2 border-black px-2 py-1">
+                            <option value="public">Publikus</option>
+                            <option value="private">Privát</option>
+                        </select>
+                    </div>
+                </div>
+                {event.deleted_at && (
+                    <div className="mt-4">
+                        <button onClick={restoreEvent} disabled={isRestoring} className="px-4 py-2 bg-green-600 text-white font-bold border-2 border-black rounded">
+                            {isRestoring ? 'Visszaállítás...' : 'Visszaállítás'}
+                        </button>
+                        <span className="ml-2 text-red-600 font-bold">Törölve: {new Date(event.deleted_at).toLocaleString()} (7 napig visszaállítható)</span>
+                    </div>
+                )}
                 </div>
             </section>
             )}
 
            {/* 2. Edit Section */}
+                    {/* Audit Log Tab */}
+                    {activeTab === 'audit' && (
+                        <section className="bg-white dark:bg-black p-6 border-2 border-black dark:border-white">
+                            <h2 className="text-xl font-black uppercase mb-6 flex items-center">
+                                <Settings className="w-5 h-5 mr-2" />
+                                Audit Log
+                            </h2>
+                            <button onClick={fetchAuditLogs} className="mb-4 px-4 py-2 bg-blue-600 text-white font-bold rounded">Frissítés</button>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full border">
+                                    <thead>
+                                        <tr>
+                                            <th className="border px-2 py-1">Dátum</th>
+                                            <th className="border px-2 py-1">Felhasználó</th>
+                                            <th className="border px-2 py-1">Akció</th>
+                                            <th className="border px-2 py-1">Részletek</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {auditLogs.map(log => (
+                                            <tr key={log.id}>
+                                                <td className="border px-2 py-1">{new Date(log.created_at).toLocaleString()}</td>
+                                                <td className="border px-2 py-1">{log.user_id}</td>
+                                                <td className="border px-2 py-1">{log.action}</td>
+                                                <td className="border px-2 py-1">{JSON.stringify(log.details)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    )}
            {activeTab === 'edit' && (
                <section className="space-y-6">
                    <div className="bg-white dark:bg-black p-6 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">

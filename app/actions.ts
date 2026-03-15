@@ -34,15 +34,32 @@ export async function deleteEventAction(eventId: string) {
         return { error: 'Nincs jogosultságod törölni ezt az eseményt.' }
     }
 
-    // Perform delete
+    // Soft delete: set deleted_at
     const { error: deleteError } = await supabase
-        .from('events')
-        .delete()
-        .eq('id', eventId)
+      .from('events')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', eventId)
 
     if (deleteError) {
-        return { error: 'Törlés sikertelen: ' + deleteError.message }
+      return { error: 'Törlés sikertelen: ' + deleteError.message }
     }
+
+    // Audit log
+    await supabase.from('event_audit_logs').insert({
+      event_id: eventId,
+      user_id: user.id,
+      action: 'delete',
+      details: {},
+      created_at: new Date().toISOString()
+    })
+
+    // Notification to owner
+    await supabase.from('notifications').insert({
+      user_id: user.id,
+      event_id: eventId,
+      message: 'Az esemény törlésre került. Visszaállítható 7 napig.',
+      created_at: new Date().toISOString()
+    })
 
     return { success: true }
 }
@@ -302,19 +319,75 @@ export async function deleteEventAdminAction(formData: FormData) {
     // 1. Manually Cascade Delete Reports
     await adminClient.from('reports').delete().eq('event_id', eventId)
     
-    // 2. Delete Event
-    // This should cascade to markets and predictions if schema is correct
-    // Using adminClient ensures we have permission to delete any event
-    const { error } = await adminClient.from('events').delete().eq('id', eventId)
-    
+    // 2. Soft Delete Event
+    const { error } = await adminClient.from('events').update({ deleted_at: new Date().toISOString() }).eq('id', eventId)
+
     if (error) {
-        console.error('Delete failed:', error)
-        return { error: 'Törlés sikertelen: ' + error.message }
+      console.error('Delete failed:', error)
+      return { error: 'Törlés sikertelen: ' + error.message }
     }
-    
+
+    // Audit log
+    await adminClient.from('event_audit_logs').insert({
+      event_id: eventId,
+      user_id: user.id,
+      action: 'delete',
+      details: {},
+      created_at: new Date().toISOString()
+    })
+
+    // Notification to owner
+    const { data: event } = await adminClient.from('events').select('creator_id').eq('id', eventId).single()
+    if (event?.creator_id) {
+      await adminClient.from('notifications').insert({
+        user_id: event.creator_id,
+        event_id: eventId,
+        message: 'Az esemény törlésre került admin által. Visszaállítható 7 napig.',
+        created_at: new Date().toISOString()
+      })
+    }
+
     revalidatePath('/admin')
     revalidatePath('/')
     return { success: true }
+
+// Restore Event (Admin or Owner)
+export async function restoreEventAction(eventId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Jelentkezz be!' }
+
+  // Check ownership or admin
+  const { data: event } = await supabase.from('events').select('creator_id, deleted_at').eq('id', eventId).single()
+  if (!event || (!ADMIN_EMAILS.includes(user.email) && event.creator_id !== user.id)) {
+    return { error: 'Nincs jogosultságod visszaállítani ezt az eseményt.' }
+  }
+  if (!event.deleted_at) return { error: 'Az esemény nincs törölve.' }
+
+  // Restore
+  const { error } = await supabase.from('events').update({ deleted_at: null }).eq('id', eventId)
+  if (error) return { error: 'Visszaállítás sikertelen: ' + error.message }
+
+  // Audit log
+  await supabase.from('event_audit_logs').insert({
+    event_id: eventId,
+    user_id: user.id,
+    action: 'restore',
+    details: {},
+    created_at: new Date().toISOString()
+  })
+
+  // Notification to owner
+  await supabase.from('notifications').insert({
+    user_id: event.creator_id,
+    event_id: eventId,
+    message: 'Az esemény visszaállítva.',
+    created_at: new Date().toISOString()
+  })
+
+  revalidatePath('/admin')
+  revalidatePath('/')
+  return { success: true }
 }
 
 export async function toggleUserBanAction(formData: FormData) {

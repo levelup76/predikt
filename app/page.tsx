@@ -9,9 +9,10 @@ export default async function Home() {
   // Fetch real events from DB
   const { data: events } = await supabase
     .from("events")
-    .select("id, title, slug, description, lock_at, status, theme, category")
+    .select("id, title, slug, description, lock_at, status, theme, category, deleted_at")
     .eq("status", "open")
     .neq("visibility", "private")
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   return (
