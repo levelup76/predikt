@@ -69,10 +69,18 @@ export default async function EventAdminPage({
       profiles: profiles.find(prof => prof.id === p.user_id)
   })) || [];
 
+  // Fetch audit logs
+  const { data: auditLogs } = await supabase
+    .from('event_audit_logs')
+    .select('id, action, details, created_at, user_id')
+    .eq('event_id', event.id)
+    .order('created_at', { ascending: false })
+
   // Re-attach to event object so Dashboard works as expected
   const eventWithPredictions = {
       ...event,
-      predictions: predictionsWithProfiles
+      predictions: predictionsWithProfiles,
+      audit_logs: auditLogs || []
   };
 
   return (

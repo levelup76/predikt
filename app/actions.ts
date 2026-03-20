@@ -294,6 +294,138 @@ export async function submitPredictionAction(eventId: string, picks: Record<stri
   return { success: true }
 }
 
+// --- RESULTS & REVEAL ACTIONS ---
+
+export async function revealResultsAction(eventId: string, resultJson: Record<string, any>) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Nincs jogosultságod.' }
+
+  const { data: event } = await supabase
+    .from('events')
+    .select('creator_id, status, lock_at, title, slug')
+    .eq('id', eventId)
+    .single()
+
+  if (!event) return { error: 'Esemény nem található.' }
+  if (event.creator_id !== user.id) return { error: 'Csak a létrehozó fedheti fel az eredményeket.' }
+  if (new Date(event.lock_at) > new Date()) return { error: 'A tippelési határidő még nem járt le.' }
+
+  const { data: markets } = await supabase
+    .from('markets')
+    .select('id, type')
+    .eq('event_id', eventId)
+
+  const { error: updateError } = await supabase
+    .from('events')
+    .update({ result_json: resultJson, status: 'revealed', reveal_at: new Date().toISOString() })
+    .eq('id', eventId)
+
+  if (updateError) return { error: 'Hiba az eredmények mentésekor.' }
+
+  const { data: predictions } = await supabase
+    .from('predictions')
+    .select('id, user_id, picks_json')
+    .eq('event_id', eventId)
+
+  if (predictions?.length && markets?.length) {
+    const totalMarkets = markets.length
+
+    const pointsUpdates = predictions.map(prediction => {
+      const picks = prediction.picks_json || {}
+      let points = 0
+
+      for (const market of markets) {
+        const correct = resultJson[market.id]
+        const answer = picks[market.id]
+        if (correct === undefined || answer === undefined) continue
+
+        if (market.type === 'select' || market.type === 'boolean') {
+          if (answer === correct) points++
+        } else if (market.type === 'score') {
+          if (typeof correct === 'object' && typeof answer === 'object') {
+            const allMatch = Object.keys(correct).every(k => String(answer[k]) === String(correct[k]))
+            if (allMatch) points++
+          }
+        } else if (market.type === 'ranking') {
+          if (Array.isArray(correct) && Array.isArray(answer)) {
+            if (JSON.stringify(answer) === JSON.stringify(correct)) points++
+          }
+        }
+      }
+
+      return { id: prediction.id, userId: prediction.user_id, points }
+    })
+
+    await Promise.all(pointsUpdates.map(({ id, points }) =>
+      supabase.from('predictions').update({ points }).eq('id', id)
+    ))
+
+    await Promise.all(pointsUpdates.map(({ userId, points }) =>
+      supabase.from('notifications').insert({
+        user_id: userId,
+        event_id: eventId,
+        message: `"${event.title}" – Eredmények megjelentek! ${points}/${totalMarkets} helyes válasz.`,
+        created_at: new Date().toISOString()
+      })
+    ))
+
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const adminClient = createAdminClient()
+        const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://predikt.app'}/e/${event.slug}`
+
+        await Promise.all(pointsUpdates.map(async ({ userId, points }) => {
+          try {
+            const { data: authUser } = await adminClient.auth.admin.getUserById(userId)
+            const email = authUser?.user?.email
+            if (!email) return
+
+            await resend.emails.send({
+              from: 'Predikt <noreply@predikt.app>',
+              to: email,
+              subject: `Eredmények közzétéve: ${event.title}`,
+              html: `
+                <div style="font-family: monospace; max-width: 500px; margin: 0 auto;">
+                  <h1 style="border-bottom: 4px solid black; padding-bottom: 12px;">Az eredmények megjelentek!</h1>
+                  <p>Az <strong>${event.title}</strong> esemény végeredményei már elérhetők.</p>
+                  <div style="border: 4px solid black; padding: 24px; text-align: center; margin: 24px 0; box-shadow: 8px 8px 0 black;">
+                    <div style="font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em;">Eredményed</div>
+                    <div style="font-size: 64px; font-weight: 900; line-height: 1;">${points}</div>
+                    <div style="font-size: 24px; font-weight: bold;">/ ${totalMarkets}</div>
+                    <div style="font-size: 14px; margin-top: 8px;">helyes válasz</div>
+                  </div>
+                  <a href="${shareUrl}" style="display: block; background: #000; color: #fff; padding: 16px 24px; text-decoration: none; font-weight: 900; text-transform: uppercase; text-align: center; letter-spacing: 0.1em;">
+                    Megnézem az eredményeket →
+                  </a>
+                  <p style="margin-top: 24px; color: #666; font-size: 12px;">Predikt Csapata</p>
+                </div>
+              `
+            })
+          } catch (e) {
+            console.error('Email send error:', e)
+          }
+        }))
+      } catch (e) {
+        console.error('Admin client error for email:', e)
+      }
+    }
+  }
+
+  await supabase.from('event_audit_logs').insert({
+    event_id: eventId,
+    user_id: user.id,
+    action: 'reveal',
+    details: {},
+    created_at: new Date().toISOString()
+  })
+
+  revalidatePath(`/e/${event.slug}`)
+  revalidatePath(`/e/${event.slug}/admin`)
+  revalidatePath('/')
+  return { success: true }
+}
+
 // --- ADMIN ACTIONS ---
 
 const ADMIN_EMAILS = ['levelup.production@gmail.com'];
