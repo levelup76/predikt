@@ -326,9 +326,19 @@ function ResultMarket({
     ? Array.isArray(currentValue) && currentValue.length > 0
     : currentValue !== undefined;
 
-  const handleSelect = (optionId: string) => {
+  const handleSelect = (optionId: string, shiftKey: boolean) => {
     if (isRevealed) return;
-    setResults(prev => ({ ...prev, [market.id]: optionId }));
+    setResults(prev => {
+      const current = prev[market.id];
+      if (shiftKey) {
+        // Shift+klik: tömb módra vált (megosztott díj)
+        let arr: string[] = Array.isArray(current) ? [...current] : (current ? [current] : []);
+        arr = arr.includes(optionId) ? arr.filter(id => id !== optionId) : [...arr, optionId];
+        if (arr.length === 0) { const copy = { ...prev }; delete copy[market.id]; return copy; }
+        return { ...prev, [market.id]: arr.length === 1 ? arr[0] : arr };
+      }
+      return { ...prev, [market.id]: optionId };
+    });
   };
 
   const handleMultiSelect = (optionId: string) => {
@@ -415,28 +425,49 @@ function ResultMarket({
 
         {/* SELECT / BOOLEAN */}
         {(market.type === 'select' || market.type === 'boolean') && (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {market.options_json.map(option => {
-              const isSelected = currentValue === option.id;
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => handleSelect(option.id)}
-                  disabled={isRevealed}
-                  className={clsx(
-                    'p-4 border-4 text-left font-black uppercase text-sm transition-all flex items-center justify-between',
-                    isSelected
-                      ? 'bg-green-400 border-black text-black shadow-none'
-                      : 'bg-white dark:bg-gray-800 border-black dark:border-white text-black dark:text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]',
-                    isRevealed && 'cursor-not-allowed'
-                  )}
-                >
-                  <span>{option.label}</span>
-                  {isSelected && <CheckCircle className="w-5 h-5" />}
-                </button>
-              );
-            })}
+          <div className="space-y-3">
+            {!isRevealed && (
+              <p className="text-xs font-bold text-gray-400 uppercase">
+                Kattints a helyes válaszra · <kbd className="bg-gray-100 border border-gray-300 px-1 rounded text-black">Shift</kbd>+kattintás = megosztott díj (több nyertes)
+              </p>
+            )}
+            <div className="grid gap-3 sm:grid-cols-2">
+              {market.options_json.map(option => {
+                const isMultiMode = Array.isArray(currentValue);
+                const isSelected = isMultiMode
+                  ? (currentValue as string[]).includes(option.id)
+                  : currentValue === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={(e) => handleSelect(option.id, e.shiftKey)}
+                    disabled={isRevealed}
+                    className={clsx(
+                      'p-4 border-4 text-left font-black uppercase text-sm transition-all flex items-center gap-3',
+                      isSelected
+                        ? 'bg-green-400 border-black text-black shadow-none'
+                        : 'bg-white dark:bg-gray-800 border-black dark:border-white text-black dark:text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]',
+                      isRevealed && 'cursor-not-allowed'
+                    )}
+                  >
+                    <div className={clsx(
+                      'shrink-0 flex items-center justify-center border-2 border-current',
+                      isMultiMode ? 'w-5 h-5' : 'w-5 h-5 rounded-full',
+                      isSelected ? 'bg-black' : 'bg-transparent'
+                    )}>
+                      {isSelected && <CheckCircle className="w-3 h-3 text-white" />}
+                    </div>
+                    <span className="flex-1">{option.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {Array.isArray(currentValue) && (
+              <p className="text-xs font-black text-blue-600 uppercase bg-blue-50 border border-blue-200 px-2 py-1 inline-block">
+                ⚡ Megosztott díj – {(currentValue as string[]).length} nyertes jelölve
+              </p>
+            )}
           </div>
         )}
 

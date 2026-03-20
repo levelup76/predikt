@@ -341,7 +341,7 @@ export async function revealResultsAction(eventId: string, resultJson: Record<st
         if (correct === undefined || answer === undefined) continue
 
         if (market.type === 'select' || market.type === 'boolean') {
-          if (answer === correct) points++
+          if (Array.isArray(correct) ? correct.includes(answer) : answer === correct) points++
         } else if (market.type === 'multiselect') {
           // Point if at least one of the user's picks is among the correct answers
           if (Array.isArray(correct) && Array.isArray(answer)) {

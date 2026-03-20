@@ -385,8 +385,9 @@ export default function BettingForm({
                     const voteCount = stats?.[market.id]?.[option.id] || 0
                     const votePercent = totalPredictions > 0 ? Math.round((voteCount / totalPredictions) * 100) : 0
                     
-                    // Result checking
-                    const isCorrect = results?.[market.id] === option.id
+                    // Result checking (correct can be a string or array for split awards)
+                    const correctVal = results?.[market.id]
+                    const isCorrect = Array.isArray(correctVal) ? correctVal.includes(option.id) : correctVal === option.id
                     const isRevealed = !!results
                     
                     let borderColor = "border-black dark:border-white"
