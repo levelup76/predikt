@@ -362,8 +362,12 @@ export async function revealResultsAction(eventId: string, resultJson: Record<st
       return { id: prediction.id, userId: prediction.user_id, points }
     })
 
+    // Use admin client to bypass RLS – predictions belong to other users
+    let adminClient: ReturnType<typeof createAdminClient> | null = null
+    try { adminClient = createAdminClient() } catch (e) { console.error('Admin client error:', e) }
+
     await Promise.all(pointsUpdates.map(({ id, points }) =>
-      supabase.from('predictions').update({ points }).eq('id', id)
+      (adminClient ?? supabase).from('predictions').update({ points }).eq('id', id)
     ))
 
     await Promise.all(pointsUpdates.map(({ userId, points }) =>
@@ -375,9 +379,8 @@ export async function revealResultsAction(eventId: string, resultJson: Record<st
       })
     ))
 
-    if (process.env.RESEND_API_KEY) {
+    if (process.env.RESEND_API_KEY && adminClient) {
       try {
-        const adminClient = createAdminClient()
         const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://predikt.app'}/e/${event.slug}`
 
         await Promise.all(pointsUpdates.map(async ({ userId, points }) => {

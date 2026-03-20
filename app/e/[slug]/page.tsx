@@ -34,7 +34,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   if (user) {
     const { data: prediction } = await supabase
       .from('predictions')
-      .select('picks_json, favorites_json')
+      .select('picks_json, favorites_json, points')
       .eq('event_id', event.id)
       .eq('user_id', user.id)
       .single()
@@ -167,6 +167,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             results={event.result_json}
             stats={aggregateStats}
             totalPredictions={totalPredictions}
+            userPoints={userPrediction?.points ?? null}
           />
           
           <div className="mt-16 border-t-4 border-black dark:border-white pt-8 mb-12">

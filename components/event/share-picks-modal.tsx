@@ -13,6 +13,8 @@ interface SharePicksModalProps {
   favorites: Record<string, any>
   markets: any[]
   userName?: string
+  results?: Record<string, any>
+  userPoints?: number
 }
 
 // Standard hex colors to avoid html2canvas issues with Tailwind v4 'lab' colors
@@ -32,8 +34,11 @@ export default function SharePicksModal({
   picks,
   favorites,
   markets,
-  userName
+  userName,
+  results,
+  userPoints,
 }: SharePicksModalProps) {
+  const isResultsMode = !!results
   const [isGenerating, setIsGenerating] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
@@ -312,82 +317,119 @@ export default function SharePicksModal({
                 }}
              >
                  {/* Header */}
-                 <div 
+                 <div
                     className="text-center mb-6 pb-6 border-b"
                     style={{ borderColor: COLORS.gray200 }}
                  >
                      <h2 className="text-3xl font-black uppercase tracking-tighter mb-1">PREDIKT</h2>
-                     <p className="text-xs font-bold uppercase tracking-widest" style={{ color: COLORS.gray500 }}>Tippszelvény</p>
-                     
-                     <div 
-                        className="mt-4 mb-2 min-w-[120px]"
-                     >
+                     <p className="text-xs font-bold uppercase tracking-widest" style={{ color: COLORS.gray500 }}>
+                       {isResultsMode ? 'Eredménykártya' : 'Tippszelvény'}
+                     </p>
+                     <div className="mt-4 mb-2">
                          <h3 className="text-xl font-black uppercase leading-[1.1] block">{eventTitle}</h3>
                      </div>
-                     
                      <div className="mt-4 flex justify-between text-xs font-bold" style={{ color: COLORS.gray500 }}>
                          <span>DÁTUM: {new Date().toLocaleDateString('hu-HU')}</span>
                          <span>ID: #{eventSlug.substring(0, 6).toUpperCase()}</span>
                      </div>
                  </div>
 
+                 {/* Score box – results mode only */}
+                 {isResultsMode && (
+                   <div style={{
+                     border: `4px solid ${COLORS.black}`,
+                     padding: '20px',
+                     textAlign: 'center',
+                     marginBottom: '24px',
+                     boxShadow: `6px 6px 0 ${COLORS.black}`,
+                   }}>
+                     <div style={{ fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', color: COLORS.gray500, marginBottom: '8px' }}>
+                       EREDMÉNYEM
+                     </div>
+                     <div style={{ fontSize: '64px', fontWeight: 900, lineHeight: 1 }}>
+                       {userPoints ?? '?'}
+                     </div>
+                     <div style={{ fontSize: '20px', fontWeight: 700, color: COLORS.gray500 }}>
+                       / {markets.length} helyes válasz
+                     </div>
+                   </div>
+                 )}
+
                  {/* List */}
                  <div className="space-y-4 mb-8">
                      {answeredMarkets.map((market, i) => {
                          const pickId = picks[market.id]
-                         
+
+                         // Correct answer check
+                         const correctVal = results?.[market.id]
+                         let isCorrect = false
+                         if (isResultsMode && correctVal !== undefined && pickId !== undefined) {
+                           if (Array.isArray(correctVal)) {
+                             isCorrect = Array.isArray(pickId)
+                               ? pickId.some((id: string) => correctVal.includes(id))
+                               : correctVal.includes(pickId)
+                           } else {
+                             isCorrect = pickId === correctVal
+                           }
+                         }
+
                          let label = ''
                          if (market.type === 'score') {
-                             label = "Pontszám tipp"
+                             label = 'Pontszám tipp'
                          } else if (market.type === 'ranking') {
-                             label = "Sorrend tipp"
+                             label = 'Sorrend tipp'
+                         } else if (market.type === 'multiselect' && Array.isArray(pickId)) {
+                             label = pickId.map((id: string) => market.options_json?.find((o: any) => o.id === id)?.label).filter(Boolean).join(', ')
                          } else {
                              const option = market.options_json?.find((o: any) => o.id === pickId)
                              label = option ? option.label : '???'
                          }
 
                          const isFav = favorites[market.id]
-                         
                          let favLabel = ''
                          if (isFav && isFav !== pickId && market.options_json) {
                              const favOption = market.options_json.find((o: any) => o.id === isFav)
-                             if (favOption) {
-                                 favLabel = favOption.label
-                             }
+                             if (favOption) favLabel = favOption.label
                          }
 
                          return (
-                             <div 
-                                key={market.id} 
+                             <div
+                                key={market.id}
                                 className="flex flex-col pb-4 mb-4 border-b last:border-0 last:mb-0 last:pb-0 relative"
                                 style={{ borderColor: COLORS.gray200 }}
                              >
                                  <div className="flex justify-between items-start gap-4 mb-2">
                                      <span className="font-bold uppercase text-xs opacity-60 w-8 shrink-0">{(i + 1).toString().padStart(2, '0')}.</span>
                                      <span className="font-bold flex-grow uppercase leading-tight">{market.question}</span>
+                                     {isResultsMode && (
+                                       <span style={{
+                                         fontWeight: 900,
+                                         fontSize: '18px',
+                                         color: isCorrect ? '#16a34a' : '#dc2626',
+                                         lineHeight: 1,
+                                         flexShrink: 0,
+                                       }}>
+                                         {isCorrect ? '✓' : '✗'}
+                                       </span>
+                                     )}
                                  </div>
                                  <div className="pl-12">
                                     <div className="flex items-center justify-between">
-                                        <div 
-                                            style={{ 
-                                                display: 'inline-block',
-                                                padding: '4px 0px',
-                                                minWidth: '60px',
-                                                textAlign: 'left',
-                                                fontSize: '18px',
-                                                fontWeight: 900,
-                                                lineHeight: '1.25',
-                                            }}
-                                        >
+                                        <div style={{
+                                            display: 'inline-block',
+                                            padding: '4px 0px',
+                                            minWidth: '60px',
+                                            textAlign: 'left',
+                                            fontSize: '18px',
+                                            fontWeight: 900,
+                                            lineHeight: '1.25',
+                                        }}>
                                             {label}
                                         </div>
-                                        {/* Show heart here ONLY if it matches the pick OR if it's a general favorite indicator and we don't have a specific different label to show */}
                                         {(isFav && (!favLabel || isFav === pickId)) && (
                                             <Heart className="w-5 h-5" style={{ color: COLORS.black, fill: COLORS.black }} />
                                         )}
                                     </div>
-                                    
-                                    {/* Separate Favorite Display */}
                                     {favLabel && (
                                         <div className="mt-2 flex items-center gap-2 text-xs font-bold uppercase" style={{ color: COLORS.black }}>
                                             <Heart className="w-3 h-3" style={{ color: COLORS.black, fill: COLORS.black }} />
@@ -405,11 +447,14 @@ export default function SharePicksModal({
                  <div className="pt-6 text-center border-t" style={{ borderColor: COLORS.gray200 }}>
                      <div className="mb-4">
                          <div className="inline-block mb-2">
-                            <span className="font-black uppercase text-xl tracking-widest leading-[1.1] block">SOK SIKERT!</span>
+                            <span className="font-black uppercase text-xl tracking-widest leading-[1.1] block">
+                              {isResultsMode ? 'TE IS JÁTSSZ!' : 'SOK SIKERT!'}
+                            </span>
                          </div>
                      </div>
-                     
-                     <p className="text-xs font-bold uppercase mb-1">Készítsd el te is a saját tippedet:</p>
+                     <p className="text-xs font-bold uppercase mb-1">
+                       {isResultsMode ? 'Nézd meg az eredményeket:' : 'Készítsd el te is a saját tippedet:'}
+                     </p>
                      <p className="text-sm font-black underline">predikt.hu/e/{eventSlug}</p>
                      
                      <div className="mt-6 flex justify-center opacity-50">

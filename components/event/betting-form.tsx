@@ -13,26 +13,28 @@ type Option = { id: string, label: string }
 type Market = { id: string, question: string, options_json: Option[], type?: string }
 type Prediction = { picks_json: Record<string, any>, favorites_json?: Record<string, any> } | null
 
-export default function BettingForm({ 
-  eventId, 
+export default function BettingForm({
+  eventId,
   eventTitle,
   eventSlug,
-  markets, 
-  userPrediction, 
+  markets,
+  userPrediction,
   isLocked,
   results,
   stats,
-  totalPredictions = 0
-}: { 
-  eventId: string, 
+  totalPredictions = 0,
+  userPoints = null,
+}: {
+  eventId: string,
   eventTitle: string,
   eventSlug: string,
-  markets: Market[], 
+  markets: Market[],
   userPrediction: Prediction,
   isLocked: boolean,
   results?: Record<string, any>,
   stats?: Record<string, Record<string, number>>,
-  totalPredictions?: number
+  totalPredictions?: number,
+  userPoints?: number | null,
 }) {
   const router = useRouter()
   // Load initial picks from existing prediction or empty
@@ -40,6 +42,7 @@ export default function BettingForm({
   const [favorites, setFavorites] = useState<Record<string, any>>(userPrediction?.favorites_json || {})
   const [isPending, setIsPending] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
+  const [isResultsShareOpen, setIsResultsShareOpen] = useState(false)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null)
   
   // Calculate completion percentage
@@ -200,8 +203,20 @@ export default function BettingForm({
                 <span className="text-xs font-black uppercase">Esemény</span>
             </button>
 
+            {/* Share Results Button – only after reveal */}
+            {results && userPrediction && (
+                <button
+                    onClick={() => setIsResultsShareOpen(true)}
+                    className="flex items-center gap-2 px-3 py-2 border-2 border-black bg-yellow-400 text-black hover:bg-yellow-300 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px]"
+                    title="Eredményem megosztása"
+                >
+                    <Share2 className="w-4 h-4" />
+                    <span className="text-xs font-black uppercase">Eredményem</span>
+                </button>
+            )}
+
             {/* Share Picks Button */}
-            {answeredCount > 0 && (
+            {answeredCount > 0 && !results && (
                 <button
                     onClick={() => setIsShareOpen(true)}
                     className="flex items-center gap-2 px-3 py-2 border-2 border-black dark:border-white bg-white dark:bg-black hover:bg-yellow-400 hover:text-black transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px]"
@@ -496,6 +511,18 @@ export default function BettingForm({
         picks={picks}
         favorites={favorites}
         markets={markets}
+      />
+
+      <SharePicksModal
+        isOpen={isResultsShareOpen}
+        onClose={() => setIsResultsShareOpen(false)}
+        eventTitle={eventTitle}
+        eventSlug={eventSlug}
+        picks={picks}
+        favorites={favorites}
+        markets={markets}
+        results={results}
+        userPoints={userPoints ?? undefined}
       />
     </div>
   )

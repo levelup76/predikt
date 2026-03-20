@@ -38,7 +38,7 @@ export default async function EventStatsPage({
   
   const { data: allPredictions } = await supabase
      .from("predictions")
-     .select("id, user_id, picks_json, points")
+     .select("id, user_id, picks_json, points, submitted_at")
      .eq("event_id", event.id);
 
   // Fetch profiles
