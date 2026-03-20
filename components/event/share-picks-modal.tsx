@@ -385,9 +385,24 @@ export default function SharePicksModal({
                              label = option ? option.label : '???'
                          }
 
+                         // Correct answer label (for wrong answers in results mode)
+                         let correctLabel = ''
+                         if (isResultsMode && !isCorrect && correctVal !== undefined) {
+                             if (market.type === 'select' || market.type === 'boolean') {
+                                 if (Array.isArray(correctVal)) {
+                                     correctLabel = correctVal.map((id: string) => market.options_json?.find((o: any) => o.id === id)?.label).filter(Boolean).join(' & ')
+                                 } else {
+                                     const opt = market.options_json?.find((o: any) => o.id === correctVal)
+                                     correctLabel = opt ? opt.label : ''
+                                 }
+                             } else if (market.type === 'multiselect' && Array.isArray(correctVal)) {
+                                 correctLabel = correctVal.map((id: string) => market.options_json?.find((o: any) => o.id === id)?.label).filter(Boolean).join(', ')
+                             }
+                         }
+
                          const isFav = favorites[market.id]
                          let favLabel = ''
-                         if (isFav && isFav !== pickId && market.options_json) {
+                         if (!isResultsMode && isFav && isFav !== pickId && market.options_json) {
                              const favOption = market.options_json.find((o: any) => o.id === isFav)
                              if (favOption) favLabel = favOption.label
                          }
@@ -414,23 +429,31 @@ export default function SharePicksModal({
                                      )}
                                  </div>
                                  <div className="pl-12">
-                                    <div className="flex items-center justify-between">
-                                        <div style={{
-                                            display: 'inline-block',
-                                            padding: '4px 0px',
-                                            minWidth: '60px',
-                                            textAlign: 'left',
-                                            fontSize: '18px',
-                                            fontWeight: 900,
-                                            lineHeight: '1.25',
-                                        }}>
-                                            {label}
-                                        </div>
-                                        {(isFav && (!favLabel || isFav === pickId)) && (
-                                            <Heart className="w-5 h-5" style={{ color: COLORS.black, fill: COLORS.black }} />
-                                        )}
+                                    <div style={{
+                                        padding: '4px 0px',
+                                        fontSize: '18px',
+                                        fontWeight: 900,
+                                        lineHeight: '1.25',
+                                        color: isResultsMode && !isCorrect ? '#dc2626' : COLORS.black,
+                                        textDecoration: isResultsMode && !isCorrect ? 'line-through' : 'none',
+                                    }}>
+                                        {label}
                                     </div>
-                                    {favLabel && (
+                                    {correctLabel && (
+                                        <div style={{
+                                            marginTop: '4px',
+                                            fontSize: '14px',
+                                            fontWeight: 900,
+                                            color: '#16a34a',
+                                            textTransform: 'uppercase',
+                                        }}>
+                                            ✓ {correctLabel}
+                                        </div>
+                                    )}
+                                    {!isResultsMode && (isFav && (!favLabel || isFav === pickId)) && (
+                                        <Heart className="w-5 h-5" style={{ color: COLORS.black, fill: COLORS.black }} />
+                                    )}
+                                    {!isResultsMode && favLabel && (
                                         <div className="mt-2 flex items-center gap-2 text-xs font-bold uppercase" style={{ color: COLORS.black }}>
                                             <Heart className="w-3 h-3" style={{ color: COLORS.black, fill: COLORS.black }} />
                                             <span style={{ opacity: 0.7 }}>Szívügyem:</span>
