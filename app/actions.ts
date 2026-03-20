@@ -342,6 +342,11 @@ export async function revealResultsAction(eventId: string, resultJson: Record<st
 
         if (market.type === 'select' || market.type === 'boolean') {
           if (answer === correct) points++
+        } else if (market.type === 'multiselect') {
+          // Point if at least one of the user's picks is among the correct answers
+          if (Array.isArray(correct) && Array.isArray(answer)) {
+            if (answer.some((id: string) => correct.includes(id))) points++
+          }
         } else if (market.type === 'score') {
           if (typeof correct === 'object' && typeof answer === 'object') {
             const allMatch = Object.keys(correct).every(k => String(answer[k]) === String(correct[k]))

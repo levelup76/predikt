@@ -60,12 +60,16 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
        allPredictions.forEach(p => {
          const picks = p.picks_json || {}
          Object.keys(picks).forEach(marketId => {
-           // For simple select: pick is optionId string
            const val = picks[marketId]
            if (typeof val === 'string') {
               if (!aggregateStats[marketId]) aggregateStats[marketId] = {}
               aggregateStats[marketId][val] = (aggregateStats[marketId][val] || 0) + 1
-           } 
+           } else if (Array.isArray(val)) {
+              if (!aggregateStats[marketId]) aggregateStats[marketId] = {}
+              val.forEach((optId: string) => {
+                aggregateStats[marketId][optId] = (aggregateStats[marketId][optId] || 0) + 1
+              })
+           }
          })
        })
      }

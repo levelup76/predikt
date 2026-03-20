@@ -322,11 +322,23 @@ function ResultMarket({
   setResults: React.Dispatch<React.SetStateAction<Record<string, any>>>;
 }) {
   const currentValue = results[market.id];
-  const isAnswered = currentValue !== undefined;
+  const isAnswered = market.type === 'multiselect'
+    ? Array.isArray(currentValue) && currentValue.length > 0
+    : currentValue !== undefined;
 
   const handleSelect = (optionId: string) => {
     if (isRevealed) return;
     setResults(prev => ({ ...prev, [market.id]: optionId }));
+  };
+
+  const handleMultiSelect = (optionId: string) => {
+    if (isRevealed) return;
+    setResults(prev => {
+      const current: string[] = Array.isArray(prev[market.id]) ? prev[market.id] : [];
+      const next = current.includes(optionId) ? current.filter(id => id !== optionId) : [...current, optionId];
+      if (next.length === 0) { const copy = { ...prev }; delete copy[market.id]; return copy; }
+      return { ...prev, [market.id]: next };
+    });
   };
 
   const handleScoreChange = (optionId: string, value: string) => {
@@ -360,6 +372,7 @@ function ResultMarket({
         <p className="text-xs text-gray-400 mt-1 uppercase font-bold">
           {market.type === 'select' ? 'Egyszeres választás' :
            market.type === 'boolean' ? 'Igen / Nem' :
+           market.type === 'multiselect' ? 'Több helyes válasz' :
            market.type === 'score' ? 'Eredmény tipp' :
            market.type === 'ranking' ? 'Sorrend' : market.type}
           {!isRevealed && ' – Kattints a helyes válaszra!'}
@@ -367,6 +380,39 @@ function ResultMarket({
       </div>
 
       <div className="p-6">
+        {/* MULTISELECT */}
+        {market.type === 'multiselect' && (
+          <div className="space-y-2">
+            <p className="text-xs font-black uppercase text-blue-600 mb-3">Jelöld be az összes helyes választ!</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {market.options_json.map(option => {
+                const selected: string[] = Array.isArray(currentValue) ? currentValue : [];
+                const isChecked = selected.includes(option.id);
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => handleMultiSelect(option.id)}
+                    disabled={isRevealed}
+                    className={clsx(
+                      'p-4 border-4 text-left font-black uppercase text-sm transition-all flex items-center gap-3',
+                      isChecked
+                        ? 'bg-green-400 border-black text-black shadow-none'
+                        : 'bg-white dark:bg-gray-800 border-black dark:border-white text-black dark:text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]',
+                      isRevealed && 'cursor-not-allowed'
+                    )}
+                  >
+                    <div className={clsx('w-5 h-5 border-2 border-current shrink-0 flex items-center justify-center', isChecked ? 'bg-black' : 'bg-transparent')}>
+                      {isChecked && <CheckCircle className="w-3 h-3 text-white" />}
+                    </div>
+                    <span>{option.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* SELECT / BOOLEAN */}
         {(market.type === 'select' || market.type === 'boolean') && (
           <div className="grid gap-3 sm:grid-cols-2">

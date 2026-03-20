@@ -98,7 +98,8 @@ export default function Step3Markets({ eventId, initialData = [] }: { eventId: s
                         {...form.register(`markets.${mIndex}.type`)}
                         className={`${inputParams} appearance-none cursor-pointer`}
                     >
-                        <option value="select">Feleletválasztós</option>
+                        <option value="select">Feleletválasztós (1 helyes)</option>
+                        <option value="multiselect">Feleletválasztós (több helyes)</option>
                         <option value="score">Számszerű</option>
                         <option value="ranking">Rangsor</option>
                     </select>
@@ -111,6 +112,9 @@ export default function Step3Markets({ eventId, initialData = [] }: { eventId: s
             <div className="pl-4 border-l-4 border-gray-200 dark:border-gray-700">
                <label className="block text-xs uppercase text-gray-400 font-black mb-4">
                  {form.watch(`markets.${mIndex}.type`) === 'score' ? 'Mezők (Kikre kell tippelni?)' : 'Válaszlehetőségek'}
+                 {form.watch(`markets.${mIndex}.type`) === 'multiselect' && (
+                   <span className="ml-2 bg-blue-100 text-blue-800 border border-blue-400 px-2 py-0.5 text-xs font-bold normal-case">több válasz is helyes lehet</span>
+                 )}
                </label>
                
                <MarketOptions 

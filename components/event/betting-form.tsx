@@ -59,6 +59,22 @@ export default function BettingForm({
     }))
   }
 
+  const handleMultiSelect = (marketId: string, optionId: string) => {
+    if (isLocked) return
+    setPicks(prev => {
+      const current: string[] = Array.isArray(prev[marketId]) ? prev[marketId] : []
+      const next = current.includes(optionId)
+        ? current.filter(id => id !== optionId)
+        : [...current, optionId]
+      if (next.length === 0) {
+        const copy = { ...prev }
+        delete copy[marketId]
+        return copy
+      }
+      return { ...prev, [marketId]: next }
+    })
+  }
+
   const handleScoreChange = (marketId: string, optionId: string, value: string) => {
     if (isLocked) return
     
@@ -228,6 +244,11 @@ export default function BettingForm({
 
             <div className="p-8 pt-10 border-b-2 border-dashed border-black dark:border-white bg-gray-50 dark:bg-gray-900/50">
               <h3 className="text-2xl font-black uppercase leading-tight">{market.question}</h3>
+              {market.type === 'multiselect' && (
+                <p className="text-xs font-black uppercase mt-2 bg-blue-400 text-black inline-block px-2 py-1 border border-black">
+                  Több helyes válasz is lehetséges – jelöld be mindegyiket!
+                </p>
+              )}
             </div>
             
             <div className="p-6">
@@ -271,6 +292,77 @@ export default function BettingForm({
                          </div>
                        )
                     })}
+                 </div>
+               ) : market.type === 'multiselect' ? (
+                 <div className="grid gap-4 sm:grid-cols-2">
+                  {market.options_json.map((option) => {
+                    const selectedArr: string[] = Array.isArray(picks[market.id]) ? picks[market.id] : []
+                    const isSelected = selectedArr.includes(option.id)
+
+                    const voteCount = stats?.[market.id]?.[option.id] || 0
+                    const votePercent = totalPredictions > 0 ? Math.round((voteCount / totalPredictions) * 100) : 0
+
+                    const correctArr: string[] = Array.isArray(results?.[market.id]) ? results![market.id] : []
+                    const isCorrect = correctArr.includes(option.id)
+                    const isRevealed = !!results
+
+                    let borderColor = "border-black dark:border-white"
+                    let bgColor = "bg-white dark:bg-black"
+                    let textColor = "text-black dark:text-white"
+                    let shadow = "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
+
+                    if (isSelected && !isRevealed) {
+                      bgColor = "bg-black dark:bg-white"
+                      textColor = "text-white dark:text-black"
+                    }
+                    if (isRevealed) {
+                      if (isCorrect) {
+                        borderColor = "border-black"; bgColor = "bg-green-500"; textColor = "text-black"; shadow = "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                      } else if (isSelected) {
+                        borderColor = "border-red-500"; bgColor = "bg-red-500"; textColor = "text-white"
+                      } else {
+                        borderColor = "border-gray-200"; bgColor = "opacity-50"; shadow = "shadow-none"
+                      }
+                    }
+
+                    return (
+                      <div
+                        key={option.id}
+                        onClick={() => !isLocked && handleMultiSelect(market.id, option.id)}
+                        role="checkbox"
+                        aria-checked={isSelected ? "true" : "false"}
+                        tabIndex={isLocked ? -1 : 0}
+                        onKeyDown={(e) => { if (!isLocked && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleMultiSelect(market.id, option.id) } }}
+                        className={clsx(
+                          "p-4 border-2 text-left transition-all relative overflow-hidden min-h-[80px] flex flex-col justify-center",
+                          borderColor, bgColor, textColor, shadow,
+                          !isLocked && !isRevealed && "hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none cursor-pointer",
+                          isLocked && "cursor-not-allowed opacity-80"
+                        )}
+                      >
+                        {stats && (
+                          <div className={clsx("absolute left-0 top-0 bottom-0 transition-all opacity-20 mix-blend-multiply dark:mix-blend-overlay", isCorrect ? "bg-white" : "bg-black dark:bg-white")} style={{ width: `${votePercent}%` }} />
+                        )}
+                        <div className="relative z-10 flex items-center justify-between w-full">
+                          <div className="flex items-center gap-3">
+                            <div className={clsx(
+                              "w-5 h-5 border-2 border-current shrink-0 flex items-center justify-center",
+                              isSelected ? "bg-current" : "bg-transparent"
+                            )}>
+                              {isSelected && <CheckCircle className="w-3 h-3 text-white dark:text-black" />}
+                            </div>
+                            <span className="font-bold uppercase tracking-wide text-sm pr-2">{option.label}</span>
+                          </div>
+                          {isRevealed && isCorrect && <CheckCircle className="w-6 h-6 shrink-0 text-black" />}
+                        </div>
+                        {stats && (
+                          <div className="relative z-10 mt-2 border-t border-current pt-1 opacity-80">
+                            <div className="text-xs font-mono font-bold">{votePercent}% ({voteCount} szavazat)</div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                  </div>
                ) : market.type === 'ranking' ? (
                   <div className="p-4 border-2 border-dashed border-black">
