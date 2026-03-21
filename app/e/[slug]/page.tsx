@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!event) return {}
 
   const url = `https://predikt.hu/e/${event.slug}`
-  const image = event.cover_image || 'https://predikt.hu/og-default.png'
+  const image = event.cover_image || 'https://predikt.hu/opengraph-image.jpeg'
 
   return {
     title: event.title,
