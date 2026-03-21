@@ -3,7 +3,7 @@ import React, { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
 import { CheckCircle, Clock, Lock, Trophy, Users, FileText, AlertTriangle, Loader2, ExternalLink, Trash2 } from 'lucide-react';
-import { revealResultsAction, recalculatePointsAction, deleteEventAction } from '@/app/actions';
+import { revealResultsAction, recalculatePointsAction, deleteEventAction, updateEventDetailsAction } from '@/app/actions';
 import RankingMarket from '@/components/event/ranking-market';
 
 type Option = { id: string; label: string };
@@ -31,6 +31,13 @@ export default function AdminDashboard({ event }: { event: any }) {
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: event.title || '',
+    description: event.description || '',
+    category: event.category || 'other',
+    lock_at: event.lock_at ? new Date(event.lock_at).toISOString().slice(0, 16) : '',
+    source_url: event.source_url || '',
+  });
 
   const markets: Market[] = (event.markets || []).slice().sort((a: Market, b: Market) => (a.order || 0) - (b.order || 0));
   const predictions: Prediction[] = event.predictions || [];
@@ -59,10 +66,13 @@ export default function AdminDashboard({ event }: { event: any }) {
     });
   };
 
+  const canEdit = predictions.length === 0 && !isRevealed;
+
   const tabs = [
     { id: 'status',  label: 'Státusz' },
     { id: 'players', label: `Játékosok (${predictions.length})` },
     { id: 'results', label: 'Eredmények' },
+    ...(canEdit ? [{ id: 'edit', label: 'Szerkesztés' }] : []),
     { id: 'audit',   label: 'Napló' },
   ];
 
@@ -338,6 +348,99 @@ export default function AdminDashboard({ event }: { event: any }) {
               )}
             </>
           )}
+        </div>
+      )}
+
+      {/* SZERKESZTÉS TAB */}
+      {activeTab === 'edit' && (
+        <div className="space-y-6">
+          <div className="border-4 border-black dark:border-white bg-blue-50 dark:bg-blue-950 p-4 text-sm font-bold text-black dark:text-white">
+            ℹ️ Szerkesztés csak addig lehetséges, amíg nem érkezett be tipp. Utána már csak törlés lehetséges.
+          </div>
+
+          <div className="border-4 border-black dark:border-white bg-white dark:bg-gray-900 p-6 space-y-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest mb-2 dark:text-white">Cím</label>
+              <input
+                type="text"
+                title="Cím"
+                value={editForm.title}
+                onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))}
+                className="w-full border-2 border-black dark:border-white px-3 py-2 font-bold dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest mb-2 dark:text-white">Leírás</label>
+              <textarea
+                title="Leírás"
+                value={editForm.description}
+                onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                rows={3}
+                className="w-full border-2 border-black dark:border-white px-3 py-2 font-bold dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-widest mb-2 dark:text-white">Kategória</label>
+                <select
+                  title="Kategória"
+                  value={editForm.category}
+                  onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
+                  className="w-full border-2 border-black dark:border-white px-3 py-2 font-bold dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                >
+                  <option value="sport">Sport</option>
+                  <option value="politics">Politika</option>
+                  <option value="awards">Díjátadó</option>
+                  <option value="other">Egyéb</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-widest mb-2 dark:text-white">Lezárás időpontja</label>
+                <input
+                  type="datetime-local"
+                  title="Lezárás időpontja"
+                  value={editForm.lock_at}
+                  onChange={e => setEditForm(f => ({ ...f, lock_at: e.target.value }))}
+                  className="w-full border-2 border-black dark:border-white px-3 py-2 font-bold dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest mb-2 dark:text-white">Forrás URL (opcionális)</label>
+              <input
+                type="url"
+                value={editForm.source_url}
+                onChange={e => setEditForm(f => ({ ...f, source_url: e.target.value }))}
+                placeholder="https://..."
+                className="w-full border-2 border-black dark:border-white px-3 py-2 font-bold dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+            </div>
+
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={() => {
+                startTransition(async () => {
+                  const res = await updateEventDetailsAction(event.id, {
+                    title: editForm.title,
+                    description: editForm.description,
+                    category: editForm.category as any,
+                    lock_at: editForm.lock_at,
+                    source_url: editForm.source_url,
+                  });
+                  if (res.error) setFeedback({ type: 'error', message: res.error });
+                  else {
+                    setFeedback({ type: 'success', message: 'Mentve!' });
+                    setActiveTab('status');
+                  }
+                });
+              }}
+              className="w-full py-3 bg-black text-white dark:bg-white dark:text-black font-black uppercase border-2 border-black dark:border-white hover:bg-yellow-400 hover:text-black hover:border-black transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
+            >
+              {isPending && <Loader2 className="animate-spin w-4 h-4" />}
+              Mentés
+            </button>
+          </div>
         </div>
       )}
 
