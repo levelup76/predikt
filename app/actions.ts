@@ -434,6 +434,80 @@ export async function revealResultsAction(eventId: string, resultJson: Record<st
   return { success: true }
 }
 
+export async function recalculatePointsAction(eventId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Nincs jogosultságod.' }
+
+  const { data: event } = await supabase
+    .from('events')
+    .select('creator_id, result_json, title')
+    .eq('id', eventId)
+    .single()
+
+  if (!event) return { error: 'Esemény nem található.' }
+  if (event.creator_id !== user.id) return { error: 'Csak a létrehozó számíthatja újra a pontokat.' }
+  if (!event.result_json) return { error: 'Még nincs rögzített eredmény.' }
+
+  const { data: markets } = await supabase
+    .from('markets')
+    .select('id, type')
+    .eq('event_id', eventId)
+
+  const { data: predictions } = await supabase
+    .from('predictions')
+    .select('id, user_id, picks_json')
+    .eq('event_id', eventId)
+
+  if (!predictions?.length || !markets?.length) return { error: 'Nincsenek tippek.' }
+
+  const resultJson = event.result_json as Record<string, any>
+
+  const pointsUpdates = predictions.map(prediction => {
+    const picks = prediction.picks_json || {}
+    let points = 0
+
+    for (const market of markets) {
+      const correct = resultJson[market.id]
+      const answer = picks[market.id]
+      if (correct === undefined || answer === undefined) continue
+
+      if (market.type === 'select' || market.type === 'boolean') {
+        if (Array.isArray(correct) ? correct.includes(answer) : answer === correct) points++
+      } else if (market.type === 'multiselect') {
+        if (Array.isArray(correct) && Array.isArray(answer)) {
+          if (answer.some((id: string) => correct.includes(id))) points++
+        }
+      } else if (market.type === 'score') {
+        if (typeof correct === 'object' && typeof answer === 'object') {
+          if (Object.keys(correct).every(k => String(answer[k]) === String(correct[k]))) points++
+        }
+      } else if (market.type === 'ranking') {
+        if (Array.isArray(correct) && Array.isArray(answer)) {
+          if (JSON.stringify(answer) === JSON.stringify(correct)) points++
+        }
+      }
+    }
+
+    return { id: prediction.id, points }
+  })
+
+  let adminClient: ReturnType<typeof createAdminClient> | null = null
+  try { adminClient = createAdminClient() } catch (e) { console.error('Admin client error:', e) }
+
+  const results = await Promise.all(
+    pointsUpdates.map(({ id, points }) =>
+      (adminClient ?? supabase).from('predictions').update({ points }).eq('id', id)
+    )
+  )
+
+  const failed = results.filter(r => r.error).length
+  if (failed > 0) return { error: `${failed} tipp frissítése sikertelen. Ellenőrizd a Supabase Service Role kulcsot.` }
+
+  revalidatePath(`/e`)
+  return { success: true, updated: pointsUpdates.length }
+}
+
 // --- ADMIN ACTIONS ---
 
 const ADMIN_EMAILS = ['levelup.production@gmail.com'];

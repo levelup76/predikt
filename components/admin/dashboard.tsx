@@ -2,7 +2,7 @@
 import React, { useState, useTransition } from 'react';
 import clsx from 'clsx';
 import { CheckCircle, Clock, Lock, Trophy, Users, FileText, AlertTriangle, Loader2, ExternalLink } from 'lucide-react';
-import { revealResultsAction } from '@/app/actions';
+import { revealResultsAction, recalculatePointsAction } from '@/app/actions';
 import RankingMarket from '@/components/event/ranking-market';
 
 type Option = { id: string; label: string };
@@ -243,6 +243,27 @@ export default function AdminDashboard({ event }: { event: any }) {
                   setResults={setResults}
                 />
               ))}
+
+              {isRevealed && (
+                <div className="pt-4 border-t-4 border-black dark:border-white">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      startTransition(async () => {
+                        const res = await recalculatePointsAction(event.id)
+                        if (res.error) setFeedback({ type: 'error', message: res.error })
+                        else setFeedback({ type: 'success', message: `Kész! ${(res as any).updated} tipp pontszáma frissítve.` })
+                      })
+                    }}
+                    disabled={isPending}
+                    className="w-full py-3 font-black uppercase text-sm border-4 border-black dark:border-white bg-white dark:bg-gray-900 dark:text-white hover:bg-yellow-400 hover:text-black transition-all flex items-center justify-center gap-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
+                  >
+                    {isPending && <Loader2 className="animate-spin w-4 h-4" />}
+                    Pontok újraszámítása
+                  </button>
+                  <p className="text-xs text-gray-400 mt-2 text-center">Ha az eredmény közzététele után a pontok 0-n maradtak, ez újraszámolja őket.</p>
+                </div>
+              )}
 
               {!isRevealed && (
                 <div className="pt-4 border-t-4 border-black dark:border-white">
