@@ -3,7 +3,7 @@ import React, { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
 import { CheckCircle, Clock, Lock, Trophy, Users, FileText, AlertTriangle, Loader2, ExternalLink, Trash2 } from 'lucide-react';
-import { revealResultsAction, recalculatePointsAction, deleteEventAction, updateEventDetailsAction } from '@/app/actions';
+import { revealResultsAction, recalculatePointsAction, deleteEventAction, updateEventDetailsAction, saveMarketsAction } from '@/app/actions';
 import RankingMarket from '@/components/event/ranking-market';
 
 type Option = { id: string; label: string };
@@ -40,6 +40,9 @@ export default function AdminDashboard({ event }: { event: any }) {
   });
 
   const markets: Market[] = (event.markets || []).slice().sort((a: Market, b: Market) => (a.order || 0) - (b.order || 0));
+  const [editMarkets, setEditMarkets] = useState<{ id: string; question: string; options: Option[] }[]>(
+    markets.map(m => ({ id: m.id, question: m.question, options: m.options_json || [] }))
+  );
   const predictions: Prediction[] = event.predictions || [];
   const auditLogs: AuditLog[] = event.audit_logs || [];
 
@@ -439,6 +442,63 @@ export default function AdminDashboard({ event }: { event: any }) {
             >
               {isPending && <Loader2 className="animate-spin w-4 h-4" />}
               Mentés
+            </button>
+          </div>
+
+          {/* Markets editing */}
+          <div className="border-4 border-black dark:border-white bg-white dark:bg-gray-900 p-6 space-y-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+            <h3 className="font-black uppercase text-sm tracking-widest dark:text-white border-b-2 border-black dark:border-white pb-2">Kérdések és válaszok</h3>
+
+            {editMarkets.map((market, mi) => (
+              <div key={market.id} className="border-2 border-black dark:border-white p-4 space-y-3">
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-widest mb-1 dark:text-white">{mi + 1}. Kérdés</label>
+                  <input
+                    type="text"
+                    title={`${mi + 1}. kérdés`}
+                    value={market.question}
+                    onChange={e => setEditMarkets(prev => prev.map((m, i) => i === mi ? { ...m, question: e.target.value } : m))}
+                    className="w-full border-2 border-black dark:border-white px-3 py-2 font-bold dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  />
+                </div>
+                <div className="space-y-2">
+                  {market.options.map((opt, oi) => (
+                    <div key={opt.id} className="flex items-center gap-2">
+                      <span className="text-xs font-black text-gray-400 w-5">{oi + 1}.</span>
+                      <input
+                        type="text"
+                        title={`${oi + 1}. válasz`}
+                        value={opt.label}
+                        onChange={e => setEditMarkets(prev => prev.map((m, i) => i === mi
+                          ? { ...m, options: m.options.map((o, j) => j === oi ? { ...o, label: e.target.value } : o) }
+                          : m
+                        ))}
+                        className="flex-1 border-2 border-black dark:border-white px-3 py-1.5 font-bold text-sm dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={() => {
+                startTransition(async () => {
+                  const res = await saveMarketsAction(event.id, editMarkets.map(m => ({
+                    question: m.question,
+                    type: markets.find(mk => mk.id === m.id)?.type || 'select',
+                    options: m.options,
+                  })));
+                  if (res.error) setFeedback({ type: 'error', message: res.error });
+                  else setFeedback({ type: 'success', message: 'Kérdések mentve!' });
+                });
+              }}
+              className="w-full py-3 bg-black text-white dark:bg-white dark:text-black font-black uppercase border-2 border-black dark:border-white hover:bg-yellow-400 hover:text-black hover:border-black transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
+            >
+              {isPending && <Loader2 className="animate-spin w-4 h-4" />}
+              Kérdések mentése
             </button>
           </div>
         </div>
