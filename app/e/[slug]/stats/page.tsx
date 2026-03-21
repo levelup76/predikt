@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Lock, Users, BarChart3, PieChart } from "lucide-react";
+import { ChevronLeft, Lock, Users, BarChart3, Trophy } from "lucide-react";
 
 export const revalidate = 60; // Refresh every minute
 
@@ -118,10 +118,15 @@ export default async function EventStatsPage({
             <BarChart3 className="w-8 h-8 text-black dark:text-white" />
             Statisztikák
         </h1>
-        <div className="flex items-center gap-2 text-sm font-bold uppercase bg-yellow-400 text-black px-4 py-2 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-            <Users className="w-4 h-4" />
-            <span>{validPredictions.length} tippelő</span>
-        </div>
+        <a
+          href="#toplista"
+          className="inline-flex flex-col items-center gap-0 bg-yellow-400 text-black px-6 py-3 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all no-underline"
+        >
+          <span className="font-black uppercase text-lg tracking-widest flex items-center gap-2">
+            <Trophy className="w-5 h-5" /> Toplista
+          </span>
+          <span className="text-xs font-bold uppercase opacity-70">{validPredictions.length} tippelő</span>
+        </a>
       </div>
 
       {/* Aggregate Stats */}
@@ -157,7 +162,7 @@ export default async function EventStatsPage({
       </div>
 
       {/* Individual Votes Table */}
-      <section>
+      <section id="toplista">
           <h2 className="text-3xl font-black uppercase mb-8 flex items-center gap-3">
               <Users className="w-8 h-8" />
               Leadott Tippek
