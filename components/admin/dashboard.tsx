@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
-import { CheckCircle, Clock, Lock, Trophy, Users, FileText, AlertTriangle, Loader2, ExternalLink } from 'lucide-react';
-import { revealResultsAction, recalculatePointsAction } from '@/app/actions';
+import { CheckCircle, Clock, Lock, Trophy, Users, FileText, AlertTriangle, Loader2, ExternalLink, Trash2 } from 'lucide-react';
+import { revealResultsAction, recalculatePointsAction, deleteEventAction } from '@/app/actions';
 import RankingMarket from '@/components/event/ranking-market';
 
 type Option = { id: string; label: string };
@@ -24,10 +25,12 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string }>
 };
 
 export default function AdminDashboard({ event }: { event: any }) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('status');
   const [results, setResults] = useState<Record<string, any>>(event.result_json || {});
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const markets: Market[] = (event.markets || []).slice().sort((a: Market, b: Market) => (a.order || 0) - (b.order || 0));
   const predictions: Prediction[] = event.predictions || [];
@@ -148,6 +151,56 @@ export default function AdminDashboard({ event }: { event: any }) {
               </button>
             </div>
           )}
+
+          {/* Delete section */}
+          <div className="border-4 border-red-500 p-5 bg-white dark:bg-gray-900">
+            <p className="text-xs font-black uppercase text-red-500 mb-3 tracking-widest flex items-center gap-2">
+              <Trash2 className="w-3 h-3" /> Veszélyes zóna
+            </p>
+            {!showDeleteConfirm ? (
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 border-2 border-red-500 text-red-500 font-black uppercase text-sm hover:bg-red-500 hover:text-white transition-all"
+              >
+                <Trash2 className="w-4 h-4" /> Esemény törlése
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <p className="font-bold text-sm text-black dark:text-white">
+                  Biztosan törlöd? Az esemény 7 napig visszaállítható.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="px-4 py-2 border-2 border-black dark:border-white font-black uppercase text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-white transition-all"
+                  >
+                    Mégse
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => {
+                      startTransition(async () => {
+                        const res = await deleteEventAction(event.id);
+                        if (res.error) {
+                          setFeedback({ type: 'error', message: res.error });
+                          setShowDeleteConfirm(false);
+                        } else {
+                          router.push('/my-events');
+                        }
+                      });
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 text-white border-2 border-red-500 font-black uppercase text-sm hover:bg-red-700 transition-all"
+                  >
+                    {isPending ? <Loader2 className="animate-spin w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
+                    Igen, törlöm
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

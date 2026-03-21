@@ -125,6 +125,12 @@ export async function updateEventDetailsAction(eventId: string, data: EventDetai
   if (event.creator_id !== user.id) return { error: 'Csak a létrehozó szerkesztheti.' }
   if (['locked', 'revealed'].includes(event.status)) return { error: 'Lezárt esemény nem szerkeszthető.' }
 
+  // Block edits if any predictions exist
+  const { count } = await supabase.from('predictions').select('*', { count: 'exact', head: true }).eq('event_id', eventId)
+  if (count && count > 0) {
+    return { error: 'Már érkeztek tippek, az esemény részletei nem módosíthatók. Csak törlés lehetséges.' }
+  }
+
   // Check locking date validity
   if (new Date(data.lock_at) <= new Date()) {
       return { error: 'A lezárás idejének a jövőben kell lennie.' }
@@ -136,10 +142,11 @@ export async function updateEventDetailsAction(eventId: string, data: EventDetai
     category: data.category,
     source_url: data.source_url || null,
     lock_at: data.lock_at,
+    edited_at: new Date().toISOString(),
   }).eq('id', eventId)
 
   if (error) return { error: 'Hiba a mentés során.' }
-  
+
   return { success: true }
 }
 

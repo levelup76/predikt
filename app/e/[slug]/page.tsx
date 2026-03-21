@@ -14,7 +14,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
   const { data: event } = await supabase
     .from('events')
     .select(`
-      id, slug, title, description, category, lock_at, source_url, theme, status, cover_image, creator_id, result_json, visibility,
+      id, slug, title, description, category, lock_at, source_url, theme, status, cover_image, creator_id, result_json, visibility, edited_at,
       markets (id, question, options_json, order, type)
     `)
     .eq('slug', slug)
@@ -95,6 +95,11 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
                {event.visibility === 'private' && (
                     <span className="bg-red-500 text-white text-xs font-black px-2 py-1 uppercase tracking-widest border-2 border-white flex items-center">
                         <Lock className="w-3 h-3 mr-1" /> Privát Esemény
+                    </span>
+               )}
+               {event.edited_at && (
+                    <span className="bg-gray-600 text-white text-xs font-bold px-2 py-1 border-2 border-white">
+                        szerkesztve: {new Date(event.edited_at).toLocaleDateString('hu-HU')}
                     </span>
                )}
              </div>
