@@ -274,36 +274,35 @@ export default function BettingForm({
                        const val = picks[market.id]?.[option.id] || ''
                        
                        return (
-                         <div key={option.id} className="flex items-center justify-between p-4 border-2 border-black dark:border-white bg-white dark:bg-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.5)]">
-                            <div className="flex flex-col">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-bold uppercase text-sm">{option.label}</span>
-                                    <button 
-                                        onClick={() => handleFavorite(market.id, option.id)}
-                                        disabled={isLocked}
-                                        className={clsx("transition-transform hover:scale-110", favorites[market.id] === option.id ? "text-red-500" : "text-gray-300 hover:text-red-400")}
-                                        title="Kedvencnek jelölés"
-                                    >
-                                        <Heart size={16} className={clsx(favorites[market.id] === option.id && "fill-current")} />
-                                    </button>
-                                </div>
+                         <div key={option.id} className="flex items-center gap-3 p-4 border-2 border-black dark:border-white bg-white dark:bg-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.5)]">
+                            <div className="flex flex-col flex-1 min-w-0">
+                                <span className="font-bold uppercase text-sm">{option.label}</span>
                                 {!!results && results[market.id] && (
                                    <span className="text-xs text-black bg-green-400 inline-block px-1 border border-black mt-1 font-bold uppercase">Eredmény: {results[market.id]?.[option.id]}</span>
                                 )}
                             </div>
-                            <input 
+                            <input
                                type="number"
                                disabled={isLocked}
                                value={val}
                                onChange={(e) => handleScoreChange(market.id, option.id, e.target.value)}
                                className={clsx(
-                                   "w-24 p-2 text-center text-xl font-black border-2 border-black rounded-none outline-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all",
-                                   !!results && results[market.id] && String(val) === String(results[market.id]?.[option.id]) 
-                                     ? "bg-green-400 text-black" 
+                                   "w-24 p-2 text-center text-xl font-black border-2 border-black rounded-none outline-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all shrink-0",
+                                   !!results && results[market.id] && String(val) === String(results[market.id]?.[option.id])
+                                     ? "bg-green-400 text-black"
                                      : "bg-gray-100 focus:bg-white"
                                )}
                                placeholder="-"
                             />
+                            <button
+                               type="button"
+                               onClick={() => handleFavorite(market.id, option.id)}
+                               disabled={isLocked}
+                               className={clsx("transition-transform hover:scale-110 shrink-0", favorites[market.id] === option.id ? "text-red-500" : "text-gray-300 hover:text-red-400")}
+                               title="Kedvencnek jelölés"
+                            >
+                               <Heart size={18} className={clsx(favorites[market.id] === option.id && "fill-current")} />
+                            </button>
                          </div>
                        )
                     })}
