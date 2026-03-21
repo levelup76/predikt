@@ -1,10 +1,45 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from "next/navigation"
+import { type Metadata } from 'next'
 import BettingForm from '@/components/event/betting-form'
 import ReportButton from '@/components/event/report-button'
 import ShareButton from '@/components/share-button'
 import { Calendar, Clock, Link as LinkIcon, Settings, BarChart3, Lock } from 'lucide-react'
 import Link from 'next/link'
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const supabase = await createClient()
+
+  const { data: event } = await supabase
+    .from('events')
+    .select('title, description, slug, cover_image')
+    .eq('slug', slug)
+    .single()
+
+  if (!event) return {}
+
+  const url = `https://predikt.hu/e/${event.slug}`
+  const image = event.cover_image || 'https://predikt.hu/og-default.png'
+
+  return {
+    title: event.title,
+    description: event.description,
+    openGraph: {
+      title: event.title,
+      description: event.description,
+      url,
+      type: 'website',
+      images: [{ url: image, width: 1200, height: 630, alt: event.title }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: event.title,
+      description: event.description,
+      images: [image],
+    },
+  }
+}
 
 export default async function EventPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
