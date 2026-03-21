@@ -27,7 +27,7 @@ export default async function CreateEventPreviewPage({ params }: { params: Promi
     .from('markets')
     .select('*')
     .eq('event_id', id)
-    .order('order_index', { ascending: true })
+    .order('order', { ascending: true })
 
   // Transform markets for BettingForm: DB JSON -> Object
   // BettingForm expects specific structure, but since we are fetching from DB, 

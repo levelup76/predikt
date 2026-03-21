@@ -80,6 +80,14 @@ export default function Step4Publish({ event, markets }: Step4PublishProps) {
             </div>
         </div>
 
+        {/* Warning */}
+        <div className="border-4 border-black dark:border-white bg-orange-100 dark:bg-orange-950 p-4 mb-6 flex items-start gap-3">
+            <span className="text-2xl shrink-0">⚠️</span>
+            <p className="font-bold text-black dark:text-white text-sm uppercase">
+                Publikálás után a láthatóság <span className="underline">nem változtatható meg</span>. Ha privátnak indítod, az esemény nem kerül ki a főoldalra.
+            </p>
+        </div>
+
         {/* Action Buttons */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Link 

@@ -28,7 +28,7 @@ export default async function CreateEventPublishPage({ params }: { params: Promi
     .from('markets')
     .select('*')
     .eq('event_id', id)
-    .order('order_index', { ascending: true })
+    .order('order', { ascending: true })
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
